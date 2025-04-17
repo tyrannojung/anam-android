@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Specific .idea files to ignore
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# macOS
+.DS_Store
+
+# Android Studio captures
+captures/
+
+# JetBrains
+*.iws
+*.ipr
+out/
