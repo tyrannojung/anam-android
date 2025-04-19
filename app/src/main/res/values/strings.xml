@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">anamwallet</string>
+    <string name="title_eth">Ethereum Module</string>
 </resources>
