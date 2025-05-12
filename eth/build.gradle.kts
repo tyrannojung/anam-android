@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 android {
-    namespace = "com.example.anamwallet.eth"
+    namespace = "com.anam.wallet.eth"
     compileSdk = 35
 
     defaultConfig {

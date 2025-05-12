@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.anamwallet"
+    namespace = "com.anam.wallet"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.anamwallet"
+        applicationId = "com.anam.wallet"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

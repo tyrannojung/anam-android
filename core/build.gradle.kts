@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.anamwallet.core"
+    namespace = "com.anam.wallet.core"
     compileSdk = 35
 
     defaultConfig {
