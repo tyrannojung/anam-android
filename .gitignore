@@ -29,3 +29,5 @@ captures/
 *.iws
 *.ipr
 out/
+
+.llm-context
