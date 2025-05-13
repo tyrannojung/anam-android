@@ -1,6 +1,7 @@
 package com.anam.wallet.ui.screens.browser
 
 import android.graphics.Bitmap
+import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -33,9 +34,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
+// Global variables to preserve browser state across tab changes
+private var cachedWebView: WebView? = null
+private var lastVisitedUrl: String = "https://www.google.com"
+private var webViewState: Bundle? = null
+
 @Composable
 fun BrowserScreen() {
-    val initialUrl = "https://www.google.com"
+    // Use the last visited URL as initial, or Google if it's the first time
+    val initialUrl = lastVisitedUrl
     var url by remember { mutableStateOf(initialUrl) }
     var isLoading by remember { mutableStateOf(false) }
     var isEditing by remember { mutableStateOf(false) }
@@ -91,55 +98,103 @@ fun BrowserScreen() {
         
         // WebView with loading indicator
         Box(modifier = Modifier.fillMaxSize()) {
-            val webView = remember { mutableStateOf<WebView?>(null) }
+            val webView = remember { mutableStateOf<WebView?>(cachedWebView) }
             
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
-                    WebView(context).apply {
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                        }
-
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageStarted(view: WebView?, urlString: String?, favicon: Bitmap?) {
-                                super.onPageStarted(view, urlString, favicon)
-                                isLoading = true
-                                
-                                // Only update URL if we're not in editing mode and it's not about:blank
-                                if (!isEditing && urlString != null && urlString != "about:blank") {
-                                    url = urlString
-                                }
-                            }
-
-                            override fun onPageFinished(view: WebView?, urlString: String?) {
-                                super.onPageFinished(view, urlString)
-                                isLoading = false
+                    // Use the cached WebView or create a new one
+                    if (cachedWebView != null) {
+                        // Return the cached WebView
+                        cachedWebView!!.apply {
+                            // Restore state if available
+                            if (webViewState != null) {
+                                restoreState(webViewState!!)
                             }
                             
-                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                return false // Let WebView handle URLs
+                            if (url != lastVisitedUrl) {
+                                loadUrl(url)
                             }
                         }
-                        
-                        loadUrl(initialUrl)
-                        webView.value = this
+                    } else {
+                        // Create a new WebView
+                        WebView(context).apply {
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                // Enable caching
+                                cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+                                // Enable persistent storage
+                                databaseEnabled = true
+                            }
+
+                            webViewClient = object : WebViewClient() {
+                                override fun onPageStarted(view: WebView?, urlString: String?, favicon: Bitmap?) {
+                                    super.onPageStarted(view, urlString, favicon)
+                                    isLoading = true
+                                    
+                                    // Only update URL if we're not in editing mode and it's not about:blank
+                                    if (!isEditing && urlString != null && urlString != "about:blank") {
+                                        url = urlString
+                                        // Save the URL for persistence
+                                        lastVisitedUrl = urlString
+                                    }
+                                }
+
+                                override fun onPageFinished(view: WebView?, urlString: String?) {
+                                    super.onPageFinished(view, urlString)
+                                    isLoading = false
+                                    
+                                    // Save the WebView state after page load completes
+                                    if (view != null) {
+                                        val state = Bundle()
+                                        view.saveState(state)
+                                        webViewState = state
+                                    }
+                                }
+                                
+                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                    return false // Let WebView handle URLs
+                                }
+                            }
+                            
+                            loadUrl(initialUrl)
+                            
+                            // Save as cached WebView
+                            cachedWebView = this
+                        }
                     }
                 },
                 update = { view ->
                     // Only update the WebView if the URL has changed and we're not in editing mode
                     if (!isEditing && view.url != url && !url.startsWith("about:blank")) {
                         view.loadUrl(url)
+                        lastVisitedUrl = url
                     }
+                    
+                    // Always make sure we have the latest WebView reference
+                    cachedWebView = view
+                    webView.value = view
                 }
             )
             
-            // Clean up WebView when composable leaves composition
+            // Save state when leaving the screen, but don't destroy the WebView
             DisposableEffect(Unit) {
                 onDispose {
-                    webView.value?.destroy()
-                    webView.value = null
+                    val currentWebView = webView.value
+                    if (currentWebView != null) {
+                        // Save state
+                        val state = Bundle()
+                        currentWebView.saveState(state)
+                        webViewState = state
+                        
+                        // Save the URL
+                        currentWebView.url?.let { currentUrl ->
+                            if (currentUrl != "about:blank") {
+                                lastVisitedUrl = currentUrl
+                            }
+                        }
+                    }
                 }
             }
             
