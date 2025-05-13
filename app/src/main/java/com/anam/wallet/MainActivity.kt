@@ -42,7 +42,12 @@ fun WalletApp() {
     var currentScreen by remember { mutableStateOf("Main") }
 
     Scaffold(
-        topBar = { Header() },
+        topBar = { 
+            // Don't show header for Browser screen
+            if (currentScreen != "Browser") {
+                Header() 
+            }
+        },
         bottomBar = {
             BottomNavBar(
                 navController = navController,

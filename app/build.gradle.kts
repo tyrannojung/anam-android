@@ -61,4 +61,7 @@ dependencies {
 
     // Coil for image loading
     implementation(libs.coil.compose)
+    
+    // WebView for browser functionality
+    implementation("androidx.webkit:webkit:1.6.1")
 }
