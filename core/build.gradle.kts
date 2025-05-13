@@ -30,8 +30,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    sourceSets["main"].aidl.srcDirs("src/main/aidl")
-
     buildFeatures {
         aidl = true
     }

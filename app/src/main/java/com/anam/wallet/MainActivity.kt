@@ -18,7 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import com.anam.wallet.ui.components.BottomNavBar
 import com.anam.wallet.ui.components.Header
 import com.anam.wallet.ui.screens.activity.ActivityScreen
-import com.anam.wallet.ui.screens.asset.AssetScreen
+import com.anam.wallet.ui.screens.hub.HubScreen
 import com.anam.wallet.ui.screens.browser.BrowserScreen
 import com.anam.wallet.ui.screens.city.CityScreen
 import com.anam.wallet.ui.screens.main.MainScreen
@@ -64,8 +64,8 @@ fun WalletApp() {
             composable("City") {
                 CityScreen()
             }
-            composable("Asset") {
-                AssetScreen()
+            composable("Hub") {
+                HubScreen()
             }
             composable("Browser") {
                 BrowserScreen()

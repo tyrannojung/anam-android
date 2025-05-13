@@ -12,7 +12,6 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
@@ -22,4 +21,3 @@ dependencyResolutionManagement {
 rootProject.name = "anamwallet"
 include(":app")
 include(":core")
-include(":eth")

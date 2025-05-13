@@ -8,15 +8,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.anam.wallet.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Header() {
     CenterAlignedTopAppBar(
-        title = { Text("Anamwallet") },
+        title = { Text(stringResource(R.string.header_title)) },
         actions = {
             IconButton(onClick = { /* 설정 버튼 클릭 시 동작 */ }) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.settings)
+                )
             }
         }
     )

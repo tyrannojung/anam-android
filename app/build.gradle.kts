@@ -37,13 +37,10 @@ android {
     buildFeatures {
         compose = true
     }
-    dynamicFeatures += setOf(":eth")
 }
 
 dependencies {
     implementation(project(":core"))
-    implementation("com.google.android.play:feature-delivery:2.1.0")
-    implementation("com.google.android.play:feature-delivery-ktx:2.1.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -61,4 +58,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material.icons.extended)
+
+    // Coil for image loading
+    implementation(libs.coil.compose)
 }

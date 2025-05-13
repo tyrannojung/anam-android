@@ -11,6 +11,9 @@ local.properties
 .idea/
 *.iml
 
+# Kotlin
+*.class
+
 # Specific .idea files to ignore
 .idea/caches/
 .idea/libraries/
@@ -30,4 +33,8 @@ captures/
 *.ipr
 out/
 
+# Logs
+*.log
+
 .llm-context
+**/.claude/settings.local.json

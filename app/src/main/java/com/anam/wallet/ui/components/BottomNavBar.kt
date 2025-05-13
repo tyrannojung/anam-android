@@ -11,7 +11,9 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
+import com.anam.wallet.R
 
 @Composable
 fun BottomNavBar(
@@ -19,28 +21,37 @@ fun BottomNavBar(
     currentScreen: String,
     onScreenSelected: (String) -> Unit
 ) {
-    val screens = listOf("Main", "City", "Asset", "Browser", "Activity")
+    // 화면 ID와 리소스 ID를 매핑
+    data class NavItem(val screenId: String, val labelResId: Int, val contentDescResId: Int)
+
+    val navItems = listOf(
+        NavItem("Main", R.string.nav_main, R.string.nav_main),
+        NavItem("City", R.string.nav_city, R.string.nav_city),
+        NavItem("Hub", R.string.nav_hub, R.string.nav_hub),
+        NavItem("Browser", R.string.nav_browser, R.string.nav_browser),
+        NavItem("Activity", R.string.nav_activity, R.string.nav_activity)
+    )
 
     NavigationBar {
-        screens.forEach { screen ->
+        navItems.forEach { navItem ->
             NavigationBarItem(
                 icon = {
                     Icon(
-                        when (screen) {
+                        when (navItem.screenId) {
                             "Main" -> Icons.Default.Home
                             "City" -> Icons.Default.LocationCity
-                            "Asset" -> Icons.Default.AccountBalance
+                            "Hub" -> Icons.Default.AccountBalance
                             "Browser" -> Icons.Default.Language
                             else -> Icons.Default.Insights
                         },
-                        contentDescription = screen
+                        contentDescription = stringResource(navItem.contentDescResId)
                     )
                 },
-                label = { Text(screen) },
-                selected = screen == currentScreen,
+                label = { Text(stringResource(navItem.labelResId)) },
+                selected = navItem.screenId == currentScreen,
                 onClick = {
-                    onScreenSelected(screen)
-                    navController.navigate(screen) {
+                    onScreenSelected(navItem.screenId)
+                    navController.navigate(navItem.screenId) {
                         popUpTo(navController.graph.startDestinationId)
                         launchSingleTop = true
                     }
