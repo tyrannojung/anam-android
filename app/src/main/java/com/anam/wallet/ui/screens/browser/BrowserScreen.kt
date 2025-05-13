@@ -35,7 +35,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 
 @Composable
 fun BrowserScreen() {
-    val initialUrl = "https://duckduckgo.com"
+    val initialUrl = "https://www.google.com"
     var url by remember { mutableStateOf(initialUrl) }
     var isLoading by remember { mutableStateOf(false) }
     var isEditing by remember { mutableStateOf(false) }
@@ -160,7 +160,7 @@ private fun processInput(input: String): String {
     return when {
         // If contains spaces, treat as search query
         trimmedInput.contains(" ") -> 
-            "https://duckduckgo.com/?q=${trimmedInput.replace(" ", "+")}"
+            "https://www.google.com/search?q=${trimmedInput.replace(" ", "+")}"
         
         // If it starts with http:// or https://, use as is
         trimmedInput.startsWith("http://") || trimmedInput.startsWith("https://") -> 
@@ -172,6 +172,6 @@ private fun processInput(input: String): String {
         
         // Otherwise, treat as search query
         else -> 
-            "https://duckduckgo.com/?q=$trimmedInput"
+            "https://www.google.com/search?q=$trimmedInput"
     }
 }
