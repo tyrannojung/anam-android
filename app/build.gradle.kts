@@ -63,5 +63,5 @@ dependencies {
     implementation(libs.coil.compose)
     
     // WebView for browser functionality
-    implementation("androidx.webkit:webkit:1.6.1")
+    implementation(libs.androidx.webkit)
 }

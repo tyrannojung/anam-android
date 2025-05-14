@@ -13,23 +13,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.anam.wallet.ModuleManager
 import com.anam.wallet.ui.components.ModuleCard
 
 @Composable
 fun MainScreen(viewModel: MainScreenViewModel = viewModel()) {
-    val context = LocalContext.current
-
-    // Initialize module manager
-    val moduleManager = remember { ModuleManager(context) }
-
     // State variables
     val uiState by viewModel.uiStateFlow.collectAsState()
-
-    // Refresh module data on first composition
-    LaunchedEffect(moduleManager) {
-        viewModel.refreshModuleData(moduleManager)
-    }
 
     Box(
         modifier = Modifier
@@ -42,60 +31,92 @@ fun MainScreen(viewModel: MainScreenViewModel = viewModel()) {
                 .heightIn(max = LocalConfiguration.current.screenHeightDp.dp - 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-        // Section header for loaded modules if any exist
-        if (uiState.moduleData.isNotEmpty()) {
+            // 메인 화면 타이틀
             item {
                 Text(
-                    text = "Loaded Modules",
-                    fontSize = 20.sp,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "AnamWallet",
+                    fontSize = 24.sp,
+                    style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    textAlign = TextAlign.Start
+                        .padding(bottom = 24.dp),
+                    textAlign = TextAlign.Center
                 )
             }
 
-            // Display module cards
-            items(uiState.moduleData.toList()) { (moduleId, moduleData) ->
-                ModuleCard(
-                    moduleInfo = moduleData.moduleInfo,
-                    networkInfo = moduleData.networkInfo,
-                    accountInfo = moduleData.accounts,
-                    balanceSummary = moduleData.balanceSummary,
-                    onUnloadClick = {
-                        viewModel.unloadModule(moduleManager, moduleId)
+            // 웰컴 메시지
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "모듈형 지갑 앱에 오신 것을 환영합니다",
+                            fontSize = 18.sp,
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "Hub 탭에서 새로운 결제 모듈을 다운로드하고 설치할 수 있습니다.",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
-                )
+                }
             }
-        }
 
-        // Display message when no modules are loaded
-        item {
-            if (uiState.moduleData.isEmpty()) {
+            // 안내 메시지
+            item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 32.dp),
+                        .padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "No modules loaded",
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "모듈 다운로드 방법",
+                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Text(
-                        text = "Go to Hub to download and install modules",
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "1. Hub 탭으로 이동하세요",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                            Text(
+                                text = "2. '모듈 다운로드 및 로드' 버튼을 클릭하세요",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                            Text(
+                                text = "3. 다운로드 진행 상황을 확인하고 결과를 확인하세요",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
-        }
         }
     }
 }

@@ -13,6 +13,7 @@ materialIconsExtended = "1.6.3"
 appcompat = "1.6.1"
 material = "1.10.0"
 coil = "2.5.0"
+webkit = "1.13.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,6 +40,9 @@ material = { group = "com.google.android.material", name = "material", version.r
 
 # Image loading
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# WebView
+androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

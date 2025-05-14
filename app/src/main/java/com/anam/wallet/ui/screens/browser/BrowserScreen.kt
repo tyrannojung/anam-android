@@ -29,24 +29,44 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
-// Global variables to preserve browser state across tab changes
-private var cachedWebView: WebView? = null
-private var lastVisitedUrl: String = "https://www.google.com"
-private var webViewState: Bundle? = null
+// Companion object to store the last visited URL across recompositions
+private object BrowserStateManager {
+    var lastVisitedUrl = "https://www.google.com"
+    var webViewState: Bundle? = null
+}
 
 @Composable
 fun BrowserScreen() {
-    // Use the last visited URL as initial, or Google if it's the first time
-    val initialUrl = lastVisitedUrl
+    // Use the last visited URL as initial
+    val initialUrl = BrowserStateManager.lastVisitedUrl
     var url by remember { mutableStateOf(initialUrl) }
     var isLoading by remember { mutableStateOf(false) }
     var isEditing by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    
+    // Create a WebView instance that persists across recompositions
+    val webView = remember { 
+        WebView(context).apply {
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+                // Database storage is enabled by default in modern WebView versions
+            }
+            
+            // Restore state if available
+            BrowserStateManager.webViewState?.let { state ->
+                restoreState(state)
+            }
+        }
+    }
     
     Column(
         modifier = Modifier.fillMaxSize()
@@ -98,101 +118,62 @@ fun BrowserScreen() {
         
         // WebView with loading indicator
         Box(modifier = Modifier.fillMaxSize()) {
-            val webView = remember { mutableStateOf<WebView?>(cachedWebView) }
-            
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    // Use the cached WebView or create a new one
-                    if (cachedWebView != null) {
-                        // Return the cached WebView
-                        cachedWebView!!.apply {
-                            // Restore state if available
-                            if (webViewState != null) {
-                                restoreState(webViewState!!)
-                            }
-                            
-                            if (url != lastVisitedUrl) {
-                                loadUrl(url)
-                            }
-                        }
-                    } else {
-                        // Create a new WebView
-                        WebView(context).apply {
-                            settings.apply {
-                                javaScriptEnabled = true
-                                domStorageEnabled = true
-                                // Enable caching
-                                cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-                                // Enable persistent storage
-                                databaseEnabled = true
-                            }
-
-                            webViewClient = object : WebViewClient() {
-                                override fun onPageStarted(view: WebView?, urlString: String?, favicon: Bitmap?) {
-                                    super.onPageStarted(view, urlString, favicon)
-                                    isLoading = true
-                                    
-                                    // Only update URL if we're not in editing mode and it's not about:blank
-                                    if (!isEditing && urlString != null && urlString != "about:blank") {
-                                        url = urlString
-                                        // Save the URL for persistence
-                                        lastVisitedUrl = urlString
-                                    }
-                                }
-
-                                override fun onPageFinished(view: WebView?, urlString: String?) {
-                                    super.onPageFinished(view, urlString)
-                                    isLoading = false
-                                    
-                                    // Save the WebView state after page load completes
-                                    if (view != null) {
-                                        val state = Bundle()
-                                        view.saveState(state)
-                                        webViewState = state
-                                    }
-                                }
+                factory = { 
+                    // Set up WebView client before returning the WebView
+                    webView.apply {
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageStarted(view: WebView?, urlString: String?, favicon: Bitmap?) {
+                                super.onPageStarted(view, urlString, favicon)
+                                isLoading = true
                                 
-                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                    return false // Let WebView handle URLs
+                                // Only update URL if we're not in editing mode and it's not about:blank
+                                if (!isEditing && urlString != null && urlString != "about:blank") {
+                                    url = urlString
+                                    BrowserStateManager.lastVisitedUrl = urlString
                                 }
                             }
+
+                            override fun onPageFinished(view: WebView?, urlString: String?) {
+                                super.onPageFinished(view, urlString)
+                                isLoading = false
+                                
+                                // Save the state
+                                val state = Bundle()
+                                webView.saveState(state)
+                                BrowserStateManager.webViewState = state
+                            }
                             
-                            loadUrl(initialUrl)
-                            
-                            // Save as cached WebView
-                            cachedWebView = this
+                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                return false // Let WebView handle URLs
+                            }
                         }
+                        
+                        // Load initial URL
+                        loadUrl(url)
                     }
                 },
                 update = { view ->
                     // Only update the WebView if the URL has changed and we're not in editing mode
                     if (!isEditing && view.url != url && !url.startsWith("about:blank")) {
                         view.loadUrl(url)
-                        lastVisitedUrl = url
                     }
-                    
-                    // Always make sure we have the latest WebView reference
-                    cachedWebView = view
-                    webView.value = view
                 }
             )
             
-            // Save state when leaving the screen, but don't destroy the WebView
-            DisposableEffect(Unit) {
+            // Save state when component is disposed
+            DisposableEffect(webView) {
                 onDispose {
-                    val currentWebView = webView.value
-                    if (currentWebView != null) {
-                        // Save state
-                        val state = Bundle()
-                        currentWebView.saveState(state)
-                        webViewState = state
-                        
-                        // Save the URL
-                        currentWebView.url?.let { currentUrl ->
-                            if (currentUrl != "about:blank") {
-                                lastVisitedUrl = currentUrl
-                            }
+                    // Save state
+                    val state = Bundle()
+                    webView.saveState(state)
+                    BrowserStateManager.webViewState = state
+                    
+                    // Save the URL
+                    webView.url?.let { currentUrl ->
+                        if (currentUrl != "about:blank") {
+                            BrowserStateManager.lastVisitedUrl = currentUrl
                         }
                     }
                 }
