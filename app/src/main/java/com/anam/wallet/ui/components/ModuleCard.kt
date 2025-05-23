@@ -29,6 +29,7 @@ import com.anam.wallet.model.AccountInfo
 import com.anam.wallet.model.BalanceSummary
 import com.anam.wallet.model.ModuleInfo
 import com.anam.wallet.model.NetworkInfo
+import com.anam.wallet.ui.theme.AnamDarkGray
 
 /**
  * Card component to display module information
@@ -46,10 +47,12 @@ fun ModuleCard(
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = AnamDarkGray
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             // Module header with icon, name, and symbol
             Row(
