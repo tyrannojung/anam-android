@@ -66,12 +66,7 @@ fun BottomNavBar(
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = { 
-                        Text(
-                            text = stringResource(navItem.labelResId),
-                            fontSize = 12.sp
-                        ) 
-                    },
+                    label = null,
                     selected = navItem.screenId == currentScreen,
                     onClick = {
                         onScreenSelected(navItem.screenId)
