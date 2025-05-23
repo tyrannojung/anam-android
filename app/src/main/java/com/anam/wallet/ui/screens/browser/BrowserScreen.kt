@@ -5,35 +5,30 @@ import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.anam.wallet.R
+import com.anam.wallet.ui.theme.AnamDarkGray
 
 // Companion object to store the last visited URL across recompositions
 private object BrowserStateManager {
@@ -69,55 +64,76 @@ fun BrowserScreen() {
     }
     
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // URL input/search bar with black background
-        Box(
+        // URL input bar with AnamWallet style
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Black)
-                .padding(8.dp)
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            TextField(
-                value = url,
-                onValueChange = { 
-                    url = it
-                    isEditing = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black,
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                keyboardActions = KeyboardActions(
-                    onGo = {
-                        url = processInput(url)
-                        isEditing = false
-                        focusManager.clearFocus()
+            // URL input container
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF333333))
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // HTTPS icon
+                Image(
+                    painter = painterResource(id = R.drawable.img_web_https),
+                    contentDescription = "HTTPS",
+                    modifier = Modifier.size(16.dp)
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // URL input field
+                BasicTextField(
+                    value = url,
+                    onValueChange = { 
+                        url = it
+                        isEditing = true
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = Color.White,
+                        fontSize = 14.sp
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(
+                        onGo = {
+                            url = processInput(url)
+                            isEditing = false
+                            focusManager.clearFocus()
+                        }
+                    )
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(10.dp))
+            
+            // Bookmark button
+            Image(
+                painter = painterResource(id = R.drawable.img_web_bookmark),
+                contentDescription = "Bookmark",
+                modifier = Modifier
+                    .size(30.dp)
+                    .clickable {
+                        // TODO: Add bookmark functionality
                     }
-                ),
-                trailingIcon = {
-                    IconButton(onClick = {
-                        url = processInput(url)
-                        isEditing = false
-                        focusManager.clearFocus()
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search"
-                        )
-                    }
-                }
             )
         }
         
         // WebView with loading indicator
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { 
@@ -185,6 +201,55 @@ fun BrowserScreen() {
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
+        }
+        
+        // Bottom navigation bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .background(AnamDarkGray),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Back button
+            Image(
+                painter = painterResource(
+                    id = if (webView.canGoBack()) R.drawable.img_web_back_on 
+                    else R.drawable.img_web_back_off
+                ),
+                contentDescription = "Back",
+                modifier = Modifier
+                    .size(30.dp)
+                    .clickable(enabled = webView.canGoBack()) {
+                        webView.goBack()
+                    }
+            )
+            
+            // Forward button
+            Image(
+                painter = painterResource(
+                    id = if (webView.canGoForward()) R.drawable.img_web_forward_on 
+                    else R.drawable.img_web_forward_off
+                ),
+                contentDescription = "Forward",
+                modifier = Modifier
+                    .size(30.dp)
+                    .clickable(enabled = webView.canGoForward()) {
+                        webView.goForward()
+                    }
+            )
+            
+            // Bookmark list button
+            Image(
+                painter = painterResource(id = R.drawable.img_web_list),
+                contentDescription = "Bookmarks",
+                modifier = Modifier
+                    .size(30.dp)
+                    .clickable {
+                        // TODO: Show bookmarks list
+                    }
+            )
         }
     }
 }
