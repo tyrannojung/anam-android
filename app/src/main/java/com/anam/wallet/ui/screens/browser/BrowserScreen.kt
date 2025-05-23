@@ -76,7 +76,7 @@ fun BrowserScreen() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
+                .padding(horizontal = 20.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // URL input container
@@ -140,7 +140,11 @@ fun BrowserScreen() {
         }
         
         // WebView with loading indicator
-        Box(modifier = Modifier.weight(1f)) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { 

@@ -19,9 +19,9 @@ fun Header(title: String? = null, showLogo: Boolean = true) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
+            .height(if (title != null) 80.dp else 100.dp)
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp),
+            .padding(horizontal = 20.dp, vertical = if (title != null) 15.dp else 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (showLogo) {
