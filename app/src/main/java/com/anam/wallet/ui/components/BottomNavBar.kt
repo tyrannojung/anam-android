@@ -2,6 +2,7 @@ package com.anam.wallet.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -40,42 +41,47 @@ fun BottomNavBar(
             .fillMaxWidth()
             .height(110.dp)
             .background(AnamDarkGray)
-            .padding(20.dp)
+            .padding(15.dp)
     ) {
-        NavigationBar(
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp)),
-            containerColor = AnamMediumGray
+                .fillMaxSize()
+                .clip(RoundedCornerShape(20.dp))
+                .background(AnamMediumGray)
+                .padding(horizontal = 5.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             navItems.forEach { navItem ->
-                NavigationBarItem(
-                    icon = {
-                        val isSelected = navItem.screenId == currentScreen
-                        val iconRes = when (navItem.screenId) {
-                            "Main" -> if (isSelected) R.drawable.menu_home_on else R.drawable.menu_home_off
-                            "Browser" -> if (isSelected) R.drawable.menu_webview_on else R.drawable.menu_webview_off
-                            "Activity" -> if (isSelected) R.drawable.menu_transaction_on else R.drawable.menu_transaction_off
-                            "Identity" -> if (isSelected) R.drawable.menu_qr_on else R.drawable.menu_qr_off
-                            "Hub" -> if (isSelected) R.drawable.menu_setting_on else R.drawable.menu_setting_off
-                            else -> if (isSelected) R.drawable.menu_home_on else R.drawable.menu_home_off
-                        }
-                        Image(
-                            painter = painterResource(id = iconRes),
-                            contentDescription = stringResource(navItem.contentDescResId),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    },
-                    label = null,
-                    selected = navItem.screenId == currentScreen,
-                    onClick = {
-                        onScreenSelected(navItem.screenId)
-                        navController.navigate(navItem.screenId) {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                    }
-                )
+                val isSelected = navItem.screenId == currentScreen
+                val iconRes = when (navItem.screenId) {
+                    "Main" -> if (isSelected) R.drawable.menu_home_on else R.drawable.menu_home_off
+                    "Browser" -> if (isSelected) R.drawable.menu_webview_on else R.drawable.menu_webview_off
+                    "Activity" -> if (isSelected) R.drawable.menu_transaction_on else R.drawable.menu_transaction_off
+                    "Identity" -> if (isSelected) R.drawable.menu_qr_on else R.drawable.menu_qr_off
+                    "Hub" -> if (isSelected) R.drawable.menu_setting_on else R.drawable.menu_setting_off
+                    else -> if (isSelected) R.drawable.menu_home_on else R.drawable.menu_home_off
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable {
+                            onScreenSelected(navItem.screenId)
+                            navController.navigate(navItem.screenId) {
+                                popUpTo(navController.graph.startDestinationId)
+                                launchSingleTop = true
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = stringResource(navItem.contentDescResId),
+                        modifier = Modifier.fillMaxSize(0.8f)
+                    )
+                }
             }
         }
     }
