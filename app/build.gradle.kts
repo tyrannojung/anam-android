@@ -37,6 +37,12 @@ android {
     buildFeatures {
         compose = true
     }
+    
+    packaging {
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
 }
 
 dependencies {
@@ -64,4 +70,12 @@ dependencies {
     
     // WebView for browser functionality
     implementation(libs.androidx.webkit)
+    
+    // DID/Crypto dependencies
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.biometric)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.bouncycastle.bcprov)
+    implementation(libs.gson)
 }

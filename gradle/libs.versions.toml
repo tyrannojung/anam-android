@@ -15,6 +15,13 @@ material = "1.10.0"
 coil = "2.5.0"
 webkit = "1.13.0"
 
+# DID/Crypto dependencies
+securityCrypto = "1.1.0-alpha06"
+biometric = "1.1.0"
+retrofit = "2.9.0"
+bouncycastle = "1.78"
+gson = "2.10.1"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -43,6 +50,14 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 # WebView
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+
+# DID/Crypto libraries
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+bouncycastle-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

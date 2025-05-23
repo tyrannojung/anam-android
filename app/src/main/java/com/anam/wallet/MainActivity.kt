@@ -28,7 +28,6 @@ import com.anam.wallet.ui.components.Header
 import com.anam.wallet.ui.screens.activity.ActivityScreen
 import com.anam.wallet.ui.screens.hub.SimpleHubScreen
 import com.anam.wallet.ui.screens.browser.BrowserScreen
-import com.anam.wallet.ui.screens.city.CityScreen
 import com.anam.wallet.ui.screens.main.MainScreen
 import com.anam.wallet.ui.screens.moduledetail.ModuleDetailScreen
 import com.anam.wallet.ui.theme.AnamwalletTheme
@@ -109,8 +108,8 @@ fun WalletApp() {
                 composable("Main") {
                     MainScreen()
                 }
-                composable("City") {
-                    CityScreen()
+                composable("Identity") {
+                    com.anam.wallet.ui.screens.identity.IdentityScreen()
                 }
                 composable("Hub") {
                     // Use the shared moduleManager
