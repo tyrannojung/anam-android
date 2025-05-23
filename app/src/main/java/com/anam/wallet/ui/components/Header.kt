@@ -16,25 +16,19 @@ import com.anam.wallet.R
 
 @Composable
 fun Header() {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(20.dp)
     ) {
         Image(
             painter = painterResource(id = R.drawable.img_logo),
             contentDescription = "Anam Logo",
-            modifier = Modifier.height(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = stringResource(R.string.header_title),
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 24.sp,
-            style = MaterialTheme.typography.headlineMedium
+            modifier = Modifier
+                .height(24.dp)
+                .align(Alignment.CenterStart)
         )
     }
 }

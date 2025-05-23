@@ -1,16 +1,18 @@
 package com.anam.wallet.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.anam.wallet.R
 import com.anam.wallet.ui.theme.AnamDarkGray
@@ -49,18 +51,27 @@ fun BottomNavBar(
             navItems.forEach { navItem ->
                 NavigationBarItem(
                     icon = {
-                        Icon(
-                            when (navItem.screenId) {
-                                "Main" -> Icons.Default.Home
-                                "Identity" -> Icons.Default.Badge
-                                "Hub" -> Icons.Default.AccountBalance
-                                "Browser" -> Icons.Default.Language
-                                else -> Icons.Default.Insights
-                            },
-                            contentDescription = stringResource(navItem.contentDescResId)
+                        val isSelected = navItem.screenId == currentScreen
+                        val iconRes = when (navItem.screenId) {
+                            "Main" -> if (isSelected) R.drawable.menu_home_on else R.drawable.menu_home_off
+                            "Browser" -> if (isSelected) R.drawable.menu_webview_on else R.drawable.menu_webview_off
+                            "Activity" -> if (isSelected) R.drawable.menu_transaction_on else R.drawable.menu_transaction_off
+                            "Identity" -> if (isSelected) R.drawable.menu_qr_on else R.drawable.menu_qr_off
+                            "Hub" -> if (isSelected) R.drawable.menu_setting_on else R.drawable.menu_setting_off
+                            else -> if (isSelected) R.drawable.menu_home_on else R.drawable.menu_home_off
+                        }
+                        Image(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = stringResource(navItem.contentDescResId),
+                            modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = { Text(stringResource(navItem.labelResId)) },
+                    label = { 
+                        Text(
+                            text = stringResource(navItem.labelResId),
+                            fontSize = 12.sp
+                        ) 
+                    },
                     selected = navItem.screenId == currentScreen,
                     onClick = {
                         onScreenSelected(navItem.screenId)
