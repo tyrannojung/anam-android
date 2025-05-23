@@ -8,6 +8,7 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -69,8 +70,8 @@ fun BrowserScreen() {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Header with WebView title
-        Header(title = "WebView")
+        // Header with WebView title (no logo)
+        Header(title = "WebView", showLogo = false)
         // URL input bar with AnamWallet style
         Row(
             modifier = Modifier
@@ -129,7 +130,10 @@ fun BrowserScreen() {
                 contentDescription = "Bookmark",
                 modifier = Modifier
                     .size(30.dp)
-                    .clickable {
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
                         // TODO: Add bookmark functionality
                     }
             )
@@ -224,7 +228,11 @@ fun BrowserScreen() {
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(30.dp)
-                    .clickable(enabled = webView.canGoBack()) {
+                    .clickable(
+                        enabled = webView.canGoBack(),
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
                         webView.goBack()
                     }
             )
@@ -238,7 +246,11 @@ fun BrowserScreen() {
                 contentDescription = "Forward",
                 modifier = Modifier
                     .size(30.dp)
-                    .clickable(enabled = webView.canGoForward()) {
+                    .clickable(
+                        enabled = webView.canGoForward(),
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
                         webView.goForward()
                     }
             )
@@ -249,7 +261,10 @@ fun BrowserScreen() {
                 contentDescription = "Bookmarks",
                 modifier = Modifier
                     .size(30.dp)
-                    .clickable {
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
                         // TODO: Show bookmarks list
                     }
             )

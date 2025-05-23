@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.anam.wallet.R
 
 @Composable
-fun Header(title: String? = null) {
+fun Header(title: String? = null, showLogo: Boolean = true) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -24,14 +24,18 @@ fun Header(title: String? = null) {
             .padding(20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.img_logo),
-            contentDescription = "Anam Logo",
-            modifier = Modifier.height(24.dp)
-        )
+        if (showLogo) {
+            Image(
+                painter = painterResource(id = R.drawable.img_logo),
+                contentDescription = "Anam Logo",
+                modifier = Modifier.height(24.dp)
+            )
+        }
         
         title?.let {
-            Spacer(modifier = Modifier.width(16.dp))
+            if (showLogo) {
+                Spacer(modifier = Modifier.width(16.dp))
+            }
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.onBackground,
