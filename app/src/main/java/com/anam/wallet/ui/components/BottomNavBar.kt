@@ -5,7 +5,7 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,7 +26,7 @@ fun BottomNavBar(
 
     val navItems = listOf(
         NavItem("Main", R.string.nav_main, R.string.nav_main),
-        NavItem("City", R.string.nav_city, R.string.nav_city),
+        NavItem("City", R.string.nav_did, R.string.nav_did),
         NavItem("Hub", R.string.nav_hub, R.string.nav_hub),
         NavItem("Browser", R.string.nav_browser, R.string.nav_browser),
         NavItem("Activity", R.string.nav_activity, R.string.nav_activity)
@@ -39,7 +39,7 @@ fun BottomNavBar(
                     Icon(
                         when (navItem.screenId) {
                             "Main" -> Icons.Default.Home
-                            "City" -> Icons.Default.LocationCity
+                            "City" -> Icons.Default.Badge
                             "Hub" -> Icons.Default.AccountBalance
                             "Browser" -> Icons.Default.Language
                             else -> Icons.Default.Insights
