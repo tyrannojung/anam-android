@@ -47,7 +47,8 @@ fun BottomNavBar(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(20.dp))
-                .background(AnamMediumGray),
+                .background(AnamMediumGray)
+                .padding(horizontal = 5.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {

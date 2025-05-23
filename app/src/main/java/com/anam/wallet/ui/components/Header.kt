@@ -15,20 +15,29 @@ import androidx.compose.ui.unit.sp
 import com.anam.wallet.R
 
 @Composable
-fun Header() {
-    Box(
+fun Header(title: String? = null) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
+            .padding(20.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
             painter = painterResource(id = R.drawable.img_logo),
             contentDescription = "Anam Logo",
-            modifier = Modifier
-                .height(24.dp)
-                .align(Alignment.CenterStart)
+            modifier = Modifier.height(24.dp)
         )
+        
+        title?.let {
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 24.sp,
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
     }
 }
