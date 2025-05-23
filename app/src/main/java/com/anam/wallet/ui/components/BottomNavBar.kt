@@ -44,10 +44,13 @@ fun BottomNavBar(
                             "Browser" -> Icons.Default.Language
                             else -> Icons.Default.Insights
                         },
+                        // 화면 읽기 도구(Screen Reader) 가 아이콘이나 이미지 같은 시각적 요소를 설명해줄 수 있도록 돕는 속성
+                        //"홈 아이콘" 처럼 말로 읽어주는 역할을 함
                         contentDescription = stringResource(navItem.contentDescResId)
                     )
                 },
                 label = { Text(stringResource(navItem.labelResId)) },
+                // selected가 true이면 자동으로 색이 바(선택된 상태로 표시)
                 selected = navItem.screenId == currentScreen,
                 onClick = {
                     onScreenSelected(navItem.screenId)
