@@ -39,66 +39,43 @@ fun ModuleDetailScreen(
         Log.d(TAG, "모듈이 IModuleUI 구현 여부: ${module is IModuleUI}")
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        if (module is IPaymentModule) "${module.getName()} 상세 정보" 
-                        else "모듈 상세 정보"
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "뒤로 가기"
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            if (module == null) {
-                // Module not found case
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (module == null) {
+            // Module not found case
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("모듈을 찾을 수 없습니다")
-                        Text("모듈 ID: $moduleId")
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onBackClick) {
-                            Text("뒤로 가기")
-                        }
+                    Text("모듈을 찾을 수 없습니다")
+                    Text("모듈 ID: $moduleId")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onBackClick) {
+                        Text("뒤로 가기")
                     }
                 }
-            } else if (module is IModuleUI) {
-                // Module implements UI interface
-                Log.d(TAG, "IModuleUI 인터페이스 구현 모듈 UI 표시 중")
-                
-                // Context data to pass to the module
-                val uiContext = remember {
-                    mutableMapOf<String, Any>(
-                        "onBack" to onBackClick
-                    )
-                }
-                
-                // Render module's UI
-                (module as IModuleUI).ModuleDetailScreen(uiContext)
-            } else {
-                // Fallback UI for modules that don't implement IModuleUI
-                Log.d(TAG, "기본 UI 폴백 사용 중 (IModuleUI 미구현)")
-                FallbackModuleDetailUI(module, onBackClick)
             }
+        } else if (module is IModuleUI) {
+            // Module implements UI interface
+            Log.d(TAG, "IModuleUI 인터페이스 구현 모듈 UI 표시 중")
+            
+            // Context data to pass to the module
+            val uiContext = remember {
+                mutableMapOf<String, Any>(
+                    "onBack" to onBackClick
+                )
+            }
+            
+            // Render module's UI
+            (module as IModuleUI).ModuleDetailScreen(uiContext)
+        } else {
+            // Fallback UI for modules that don't implement IModuleUI
+            Log.d(TAG, "기본 UI 폴백 사용 중 (IModuleUI 미구현)")
+            FallbackModuleDetailUI(module, onBackClick)
         }
     }
 }
