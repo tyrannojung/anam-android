@@ -59,7 +59,7 @@ fun FrontModuleSurface(
             override fun onServiceDisconnected(name: ComponentName?) {
                 Log.d(TAG, "FrontModuleService disconnected")
                 frontModuleService = null
-                errorMessage = "서비스 연결이 끊어졌습니다"
+                errorMessage = "프론트 모듈 서비스 연결이 끊어졌습니다"
             }
         }
     }
@@ -141,22 +141,56 @@ fun FrontModuleSurface(
             }
             
             else -> {
-                // TODO: 실제 Surface View 구현
-                // 현재는 플레이스홀더
+                // 실제 Surface 렌더링
                 AndroidView(
                     factory = { context ->
-                        android.view.View(context).apply {
-                            setBackgroundColor(android.graphics.Color.LTGRAY)
+                        android.view.SurfaceView(context).apply {
+                            // Surface 준비되면 프론트 모듈 Surface 요청
+                            holder.addCallback(object : android.view.SurfaceHolder.Callback {
+                                override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                                    Log.d(TAG, "Main Surface created, requesting module surface")
+                                    requestModuleSurface(frontModuleService, holder.surfaceFrame.width(), holder.surfaceFrame.height())
+                                }
+                                
+                                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
+                                    Log.d(TAG, "Main Surface changed: ${width}x${height}")
+                                    requestModuleSurface(frontModuleService, width, height)
+                                }
+                                
+                                override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                                    Log.d(TAG, "Main Surface destroyed")
+                                }
+                            })
                         }
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-                
-                Text(
-                    text = "프론트 모듈 실행 중\n모듈 ID: $moduleId",
-                    modifier = Modifier.padding(16.dp)
-                )
             }
         }
+    }
+}
+
+/**
+ * Surface 요청 함수
+ */
+private fun requestModuleSurface(
+    frontModuleService: IFrontModuleService?,
+    width: Int, 
+    height: Int
+) {
+    try {
+        Log.d(TAG, "Requesting module surface: ${width}x${height}")
+        
+        frontModuleService?.let { service ->
+            val moduleSurface = service.createModuleSurface(width, height)
+            if (moduleSurface != null) {
+                Log.d(TAG, "Module surface received successfully")
+                // Surface가 성공적으로 전달됨
+            } else {
+                Log.w(TAG, "Failed to get module surface")
+            }
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to request module surface", e)
     }
 }
