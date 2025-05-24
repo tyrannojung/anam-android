@@ -83,18 +83,18 @@ fun SimpleHubScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "모듈 다운로드",
+                        text = "프론트 모듈 다운로드",
                         fontSize = 18.sp,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     
-                    // 모듈 ID 입력 필드
+                    // 프론트 모듈 ID 입력 필드
                     OutlinedTextField(
                         value = moduleIdInput,
                         onValueChange = { moduleIdInput = it },
-                        label = { Text("모듈 인덱스") },
-                        placeholder = { Text("7, 8, 9 등 입력") },
+                        label = { Text("프론트 모듈 인덱스") },
+                        placeholder = { Text("7, 8, 9 등 입력 (프론트 모듈만)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -119,7 +119,7 @@ fun SimpleHubScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                         }
-                        Text("모듈 다운로드 및 로드")
+                        Text("프론트 모듈 다운로드 및 로드")
                     }
                     
                     // 다운로드 진행 상태
@@ -159,7 +159,7 @@ fun SimpleHubScreen(
             // 모듈 정보 표시
             if (uiState.moduleData.isNotEmpty()) {
                 Text(
-                    text = "설치된 모듈",
+                    text = "설치된 프론트 모듈",
                     fontSize = 20.sp,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
@@ -250,13 +250,13 @@ fun SimpleHubScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "설치된 모듈이 없습니다",
+                        text = "설치된 프론트 모듈이 없습니다",
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "다운로드 버튼을 눌러 모듈을 설치하세요",
+                        text = "다운로드 버튼을 눌러 프론트 모듈을 설치하세요",
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
