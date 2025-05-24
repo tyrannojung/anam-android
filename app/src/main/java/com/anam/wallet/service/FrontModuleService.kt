@@ -283,11 +283,11 @@ class FrontModuleService : Service() {
                 }
             }
             
-            // 메인 스레드 작업 완료까지 대기 (3초 타임아웃)
-            if (latch.await(3, TimeUnit.SECONDS)) {
+            // 메인 스레드 작업 완료까지 대기 (10초 타임아웃 - DexClassLoader 초기화 고려)
+            if (latch.await(10, TimeUnit.SECONDS)) {
                 return resultRef.get()
             } else {
-                Log.e(TAG, "SurfaceControlViewHost creation timed out")
+                Log.e(TAG, "SurfaceControlViewHost creation timed out (10초)")
                 return null
             }
             

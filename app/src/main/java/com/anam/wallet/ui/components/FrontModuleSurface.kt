@@ -205,6 +205,7 @@ private fun requestModuleSurfacePackage(
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
     
+    var retryCount = 0
     fun tryRequest() {
         try {
             Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
@@ -236,8 +237,13 @@ private fun requestModuleSurfacePackage(
                     
                     Log.d(TAG, "SurfacePackage attached – single-process ✓")
                     
+                } else if (retryCount < 5) {
+                    // SurfacePackage null인 경우 재시도 (최대 5회)
+                    retryCount++
+                    Log.d(TAG, "SurfacePackage null – retry $retryCount/5 in 500ms")
+                    surfaceView.postDelayed({ tryRequest() }, 500)   // 500ms 간격 재시도
                 } else {
-                    Log.w(TAG, "SurfacePackage null")
+                    Log.e(TAG, "SurfacePackage null after $retryCount retries - giving up")
                 }
             } ?: run {
                 Log.w(TAG, "FrontModuleService is null")
