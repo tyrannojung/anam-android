@@ -1,7 +1,10 @@
 package com.anam.wallet;
 
 import com.anam.wallet.IMainAppService;
-import android.view.SurfaceControlViewHost.SurfacePackage;
+import android.os.IBinder;
+
+// parcelable 선언 추가
+parcelable android.view.SurfaceControlViewHost.SurfacePackage;
 
 /**
  * 프론트 모듈 서비스 인터페이스
@@ -30,9 +33,10 @@ interface IFrontModuleService {
     
     /**
      * 프론트 모듈 UI SurfacePackage 생성 및 반환
+     * @param hostToken SurfaceView의 hostToken (터치/키보드 이벤트 전달용)
      * @param width Surface 너비
      * @param height Surface 높이
      * @return SurfacePackage 객체 (API 29+)
      */
-    SurfacePackage createModuleSurfacePackage(int width, int height);
+    SurfacePackage createModuleSurfacePackage(in IBinder hostToken, int width, int height);
 }

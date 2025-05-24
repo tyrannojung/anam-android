@@ -199,33 +199,48 @@ private fun requestModuleSurfacePackage(
     width: Int, 
     height: Int
 ) {
-    try {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            Log.e(TAG, "SurfaceControlViewHost requires API 29+")
-            return
-        }
-        
-        Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
-        
-        frontModuleService?.let { service ->
-            // 서비스에서 SurfaceControlViewHost가 생성한 SurfacePackage 받기
-            val surfacePackage = service.createModuleSurfacePackage(width, height)
-            if (surfacePackage != null) {
-                Log.d(TAG, "Module SurfacePackage received from SurfaceControlViewHost")
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+    
+    fun tryRequest() {
+        try {
+            Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
+            
+            frontModuleService?.let { service ->
+                // SurfaceView의 hostToken 가져오기 (API 29+)
+                val hostToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    surfaceView.hostToken
+                } else {
+                    null
+                }
                 
-                // SurfacePackage를 SurfaceView에 설정
-                // 이렇게 하면 다른 프로세스의 UI가 이 SurfaceView에 렌더링됨
-                surfaceView.setChildSurfacePackage(surfacePackage)
+                if (hostToken == null) {
+                    // hostToken이 아직 null이면 한 프레임 뒤 재시도
+                    Log.w(TAG, "hostToken 아직 null – 16ms 후 재시도")
+                    surfaceView.postDelayed({ tryRequest() }, 16)
+                    return@let
+                }
                 
-                Log.d(TAG, "SurfacePackage successfully attached to SurfaceView")
-                
-            } else {
-                Log.w(TAG, "Failed to get module SurfacePackage from SurfaceControlViewHost")
+                // 서비스에서 SurfaceControlViewHost가 생성한 SurfacePackage 받기
+                val surfacePackage = service.createModuleSurfacePackage(hostToken, width, height)
+                if (surfacePackage != null) {
+                    Log.d(TAG, "Module SurfacePackage received from SurfaceControlViewHost")
+                    
+                    // SurfacePackage를 SurfaceView에 설정
+                    // 이렇게 하면 다른 프로세스의 UI가 이 SurfaceView에 렌더링됨
+                    surfaceView.setChildSurfacePackage(surfacePackage)
+                    
+                    Log.d(TAG, "SurfacePackage attached 🎉")
+                    
+                } else {
+                    Log.w(TAG, "SurfacePackage null")
+                }
+            } ?: run {
+                Log.w(TAG, "FrontModuleService is null")
             }
-        } ?: run {
-            Log.w(TAG, "FrontModuleService is null")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to request module surface package", e)
         }
-    } catch (e: Exception) {
-        Log.e(TAG, "Failed to request module surface package", e)
     }
+    
+    tryRequest()
 }

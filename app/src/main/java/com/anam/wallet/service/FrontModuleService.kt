@@ -1,17 +1,25 @@
 package com.anam.wallet.service
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.hardware.display.DisplayManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
+import android.view.Display
 import android.view.SurfaceControlViewHost
+import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.anam.wallet.IMainAppService
 import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
 import com.anam.wallet.core.FrontModuleContext
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
 
 private const val TAG = "FrontModuleService"
 
@@ -24,6 +32,12 @@ class FrontModuleService : Service() {
     private var frontModule: IFrontModuleUI? = null
     private lateinit var mainAppService: IMainAppService
     private var surfaceControlViewHost: SurfaceControlViewHost? = null
+    
+    /** 중복 Host 정리용 헬퍼 - Surface 누수 방지 */
+    private fun disposeHost() {
+        surfaceControlViewHost?.release()
+        surfaceControlViewHost = null
+    }
     
     private val binder = object : IFrontModuleService.Stub() {
         override fun loadModule(apkPath: String, className: String, moduleId: String) {
@@ -63,8 +77,8 @@ class FrontModuleService : Service() {
             frontModule?.setMainAppService(service)
         }
         
-        override fun createModuleSurfacePackage(width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
-            Log.d(TAG, "Creating module surface package: ${width}x${height}")
+        override fun createModuleSurfacePackage(hostToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
+            Log.d(TAG, "Creating module surface package: ${width}x${height} with hostToken")
             
             return try {
                 if (frontModule == null) {
@@ -72,9 +86,12 @@ class FrontModuleService : Service() {
                     return null
                 }
                 
+                // 먼저 기존 Host 정리 (누수 방지)
+                disposeHost()
+                
                 // API 29+ 에서만 SurfaceControlViewHost 사용 가능
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    createSurfaceControlViewHost(width, height)
+                    createSurfaceControlViewHost(hostToken, width, height)
                 } else {
                     Log.e(TAG, "SurfaceControlViewHost requires API 29+")
                     null
@@ -144,7 +161,7 @@ class FrontModuleService : Service() {
      * SurfaceControlViewHost를 사용하여 실제 Compose UI를 렌더링
      * API 29+ (Android 10+) 에서만 사용 가능
      */
-    private fun createSurfaceControlViewHost(width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
+    private fun createSurfaceControlViewHost(hostToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
         return try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 Log.e(TAG, "SurfaceControlViewHost requires API 29+")
@@ -153,37 +170,71 @@ class FrontModuleService : Service() {
             
             Log.d(TAG, "Creating SurfaceControlViewHost: ${width}x${height}")
             
-            // SurfaceControlViewHost 생성
-            surfaceControlViewHost = SurfaceControlViewHost(
-                this, // context
-                display, // display - 서비스의 기본 디스플레이 사용
-                null as android.os.IBinder? // hostToken - null이면 자동 생성
-            )
+            // DisplayManager를 통해 기본 디스플레이 얻기
+            val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            val defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
             
-            // ComposeView 생성
-            val composeView = ComposeView(this).apply {
-                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-                
-                // 실제 APK의 Compose UI 설정
-                setContent {
-                    frontModule!!.FrontModuleScreen(
-                        FrontModuleContext(
-                            moduleId = "current_module",
-                            parameters = emptyMap()
-                        )
-                    )
+            // hostToken을 넣은 WindowContext 생성 (터치/IME 포커스 문제 해결)
+            val windowContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // API 30+에서는 Bundle 파라미터를 사용 (hostToken은 SCVH 생성자에서 직접 사용)
+                createWindowContext(
+                    defaultDisplay,
+                    WindowManager.LayoutParams.TYPE_APPLICATION,
+                    null  // Bundle 파라미터는 null
+                )
+            } else {
+                createDisplayContext(defaultDisplay)  // API 29
+            }
+            
+            // UI 객체는 메인 루퍼에서 생성해야 함 (Binder 스레드에서 직접 생성하면 안 됨)
+            val resultRef = AtomicReference<SurfaceControlViewHost.SurfacePackage?>()
+            val latch = CountDownLatch(1)
+            
+            Handler(Looper.getMainLooper()).post {
+                try {
+                    // SurfaceControlViewHost 생성 - 메인 스레드에서
+                    surfaceControlViewHost = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        // API 30+ (Android 11+): (Context, Display, IBinder) 3-파라미터
+                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
+                    } else {
+                        // API 29 (Android 10): (Context, Display, IBinder) 3-파라미터 (IBinder nullable)
+                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
+                    }
+                    
+                    // ComposeView 생성 - 메인 스레드에서
+                    val composeView = ComposeView(windowContext).apply {
+                        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                        
+                        // 실제 APK의 Compose UI 설정
+                        setContent {
+                            frontModule!!.FrontModuleScreen(
+                                FrontModuleContext(
+                                    moduleId = "current_module",
+                                    parameters = emptyMap()
+                                )
+                            )
+                        }
+                    }
+                    
+                    // ComposeView를 SurfaceControlViewHost에 설정 - 메인 스레드에서
+                    surfaceControlViewHost!!.setView(composeView, width, height)
+                    
+                    // SurfacePackage 반환
+                    val surfacePackage = surfaceControlViewHost!!.surfacePackage
+                    Log.d(TAG, "SurfaceControlViewHost created successfully with SurfacePackage on main thread")
+                    
+                    resultRef.set(surfacePackage)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to create SurfaceControlViewHost on main thread", e)
+                    resultRef.set(null)
+                } finally {
+                    latch.countDown()
                 }
             }
             
-            // ComposeView를 SurfaceControlViewHost에 설정
-            // 이렇게 하면 ComposeView가 올바른 Window에 attach됨
-            surfaceControlViewHost!!.setView(composeView, width, height)
-            
-            // SurfacePackage 반환 - 이것이 다른 프로세스에서 렌더링할 수 있는 객체
-            val surfacePackage = surfaceControlViewHost!!.surfacePackage
-            Log.d(TAG, "SurfaceControlViewHost created successfully with SurfacePackage")
-            
-            return surfacePackage
+            // 메인 스레드 작업 완료까지 대기
+            latch.await()
+            return resultRef.get()
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create SurfaceControlViewHost", e)
