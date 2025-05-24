@@ -34,10 +34,9 @@
             android:name=".service.MainAppService"
             android:exported="false" />
             
-        <!-- 프론트 모듈 서비스 (별도 프로세스) -->
+        <!-- 프론트 모듈 서비스 (단일 프로세스) -->
         <service
             android:name=".service.FrontModuleService"
-            android:process=":front_module_process"
             android:exported="false" />
             
     </application>
