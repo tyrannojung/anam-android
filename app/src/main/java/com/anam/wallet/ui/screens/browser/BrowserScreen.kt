@@ -2,7 +2,6 @@ package com.anam.wallet.ui.screens.browser
 
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -173,17 +172,6 @@ fun BrowserScreen() {
                                 BrowserStateManager.webViewState = state
                             }
                             
-                            override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
-                                super.onReceivedError(view, errorCode, description, failingUrl)
-                                isLoading = false
-                                // Keep Header and URL bar visible even on error
-                            }
-                            
-                            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                                super.onReceivedError(view, request, error)
-                                isLoading = false
-                                // Keep Header and URL bar visible even on error
-                            }
                             
                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                                 return false // Let WebView handle URLs
