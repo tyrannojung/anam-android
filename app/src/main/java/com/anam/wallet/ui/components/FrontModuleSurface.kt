@@ -194,6 +194,53 @@ fun FrontModuleSurface(
 }
 
 /**
+ * API 30+에서 SurfaceView와 SurfacePackage 간 터치 이벤트 채널 연결
+ * WindowManager.transferTouchGesture()를 사용하여 input channel 바인딩
+ */
+@Suppress("PrivateApi", "DiscouragedPrivateApi")
+private fun bindInputChannel(
+    context: Context,
+    surfaceView: SurfaceView,
+    surfacePackage: SurfaceControlViewHost.SurfacePackage
+) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        Log.d(TAG, "bindInputChannel: API 29, transferTouchGesture not needed")
+        return   // API 29는 필요 없음
+    }
+
+    try {
+        Log.d(TAG, "bindInputChannel: Attempting transferTouchGesture for API 30+")
+        
+        // 1. 클래스 객체 준비 (reflection)
+        val ittClazz = Class.forName("android.view.InputTransferToken")
+
+        // 2. 호스트-토큰 : SurfaceView.getInputToken()
+        val hostItt = surfaceView.javaClass
+            .getMethod("getInputToken")
+            .invoke(surfaceView)
+
+        // 3. 게스트-토큰 : SurfacePackage.getInputTransferToken()
+        val guestItt = surfacePackage.javaClass
+            .getMethod("getInputTransferToken")
+            .invoke(surfacePackage)
+
+        Log.d(TAG, "bindInputChannel: hostItt=${if (hostItt != null) "OK" else "NULL"}, guestItt=${if (guestItt != null) "OK" else "NULL"}")
+
+        // 4. WindowManager#transferTouchGesture(from, to)
+        val wm = context.getSystemService(Context.WINDOW_SERVICE)
+        val m = wm.javaClass.getMethod(
+            "transferTouchGesture",
+            ittClazz,                                  // from
+            ittClazz                                   // to
+        )
+        val ok = m.invoke(wm, hostItt, guestItt) as Boolean
+        Log.d(TAG, "bindInputChannel: transferTouchGesture result = $ok 🎯")
+    } catch (e: Exception) {
+        Log.e(TAG, "bindInputChannel: Failed to link input channels", e)
+    }
+}
+
+/**
  * 프론트 모듈 서비스에서 SurfacePackage를 받아서 SurfaceView에 연결
  * API 29+ (Android 10+) 에서만 동작
  */
@@ -210,22 +257,11 @@ private fun requestModuleSurfacePackage(
             Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
             
             frontModuleService?.let { service ->
-                // SurfaceView의 hostToken과 inputToken 가져오기 (API 29+)
+                // SurfaceView의 hostToken 가져오기 (API 29+)
                 val hostToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     surfaceView.hostToken
                 } else {
                     null
-                }
-                
-                val inputToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    try {
-                        // API 30+에서만 inputToken 프로퍼티 사용 가능
-                        surfaceView.javaClass.getMethod("getInputToken").invoke(surfaceView) as? android.os.IBinder
-                    } catch (e: Exception) {
-                        hostToken  // fallback
-                    }
-                } else {
-                    hostToken  // API 29에서는 hostToken 사용
                 }
                 
                 if (hostToken == null) {
@@ -235,18 +271,20 @@ private fun requestModuleSurfacePackage(
                     return@let
                 }
                 
-                Log.d(TAG, "Tokens: hostToken=${if (hostToken != null) "OK" else "NULL"}, inputToken=${if (inputToken != null) "OK" else "NULL"}")
+                Log.d(TAG, "hostToken: ${if (hostToken != null) "OK" else "NULL"}")
                 
                 // 서비스에서 SurfaceControlViewHost가 생성한 SurfacePackage 받기
-                val surfacePackage = service.createModuleSurfacePackage(hostToken, inputToken, width, height)
+                val surfacePackage = service.createModuleSurfacePackage(hostToken, width, height)
                 if (surfacePackage != null) {
                     Log.d(TAG, "Module SurfacePackage received from SurfaceControlViewHost")
                     
                     // SurfacePackage를 SurfaceView에 설정
-                    // 이렇게 하면 다른 프로세스의 UI가 이 SurfaceView에 렌더링됨
                     surfaceView.setChildSurfacePackage(surfacePackage)
                     
-                    Log.d(TAG, "SurfacePackage attached 🎉")
+                    // 터치 이벤트 채널 연결 (API 30+)
+                    bindInputChannel(surfaceView.context, surfaceView, surfacePackage)
+                    
+                    Log.d(TAG, "SurfacePackage attached ✓ touch ready")
                     
                 } else {
                     Log.w(TAG, "SurfacePackage null")
