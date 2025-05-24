@@ -2,15 +2,20 @@ package com.anam.wallet.service
 
 import android.app.Service
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Surface
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.anam.wallet.IMainAppService
 import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
+import com.anam.wallet.core.FrontModuleContext
 
 private const val TAG = "FrontModuleService"
 
@@ -133,11 +138,11 @@ class FrontModuleService : Service() {
     }
     
     /**
-     * SurfaceTexture를 사용하여 Producer Surface 생성
+     * 실제 Compose UI를 Surface에 렌더링
      */
     private fun createComposeUIOnSurface(width: Int, height: Int): Surface? {
         return try {
-            Log.d(TAG, "Creating producer surface with SurfaceTexture: ${width}x${height}")
+            Log.d(TAG, "Creating Compose UI surface: ${width}x${height}")
             
             // SurfaceTexture로 Producer Surface 생성
             surfaceTexture = SurfaceTexture(0).apply {
@@ -145,63 +150,70 @@ class FrontModuleService : Service() {
             }
             val surface = Surface(surfaceTexture!!)
             
-            // Surface에 직접 그리기
-            drawModuleUIOnSurface(surface, width, height)
+            // 메인 스레드에서 Compose UI 렌더링
+            Handler(Looper.getMainLooper()).post {
+                renderComposeUIToSurface(surface, width, height)
+            }
             
-            Log.d(TAG, "Producer surface created and drawn successfully")
+            Log.d(TAG, "Compose UI surface created successfully")
             surface
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create producer surface", e)
+            Log.e(TAG, "Failed to create Compose UI surface", e)
             null
         }
     }
     
     /**
-     * Surface에 모듈 UI 직접 그리기
+     * 실제 Compose UI를 Surface에 렌더링
      */
-    private fun drawModuleUIOnSurface(surface: Surface, width: Int, height: Int) {
+    private fun renderComposeUIToSurface(surface: Surface, width: Int, height: Int) {
         try {
-            Log.d(TAG, "Drawing module UI directly on surface")
+            Log.d(TAG, "Rendering real Compose UI to surface")
             
-            val canvas = surface.lockCanvas(Rect(0, 0, width, height))
-            canvas?.let {
-                try {
-                    // 배경색 설정
-                    it.drawColor(Color.LTGRAY)
-                    
-                    // 모듈 UI 테스트 드로잉
-                    val paint = android.graphics.Paint().apply {
-                        color = Color.BLACK
-                        textSize = 60f
-                        isAntiAlias = true
-                    }
-                    
-                    // 모듈 정보 표시
-                    it.drawText("Front Module Loaded!", 100f, 200f, paint)
-                    it.drawText("Module is running in separate process", 100f, 300f, paint)
-                    
-                    // 실제 로드된 모듈 정보 표시
-                    frontModule?.let { module ->
-                        it.drawText("Module Class: ${module.javaClass.simpleName}", 100f, 400f, paint)
-                        it.drawText("Status: Ready", 100f, 500f, paint)
-                    } ?: run {
-                        it.drawText("Status: Module not loaded", 100f, 400f, paint)
-                    }
-                    
-                    // 추가 정보
-                    it.drawText("Surface: ${width}x${height}", 100f, 600f, paint)
-                    it.drawText("Process: ${android.os.Process.myPid()}", 100f, 700f, paint)
-                    
-                    Log.d(TAG, "Module UI drawn successfully on surface")
-                    
-                } finally {
-                    surface.unlockCanvasAndPost(it)
-                }
+            if (frontModule == null) {
+                Log.w(TAG, "Front module is null, cannot render UI")
+                return
             }
             
+            // 컨테이너 레이아웃 생성
+            val container = FrameLayout(this).apply {
+                layoutParams = ViewGroup.LayoutParams(width, height)
+            }
+            
+            // ComposeView 생성
+            val composeView = ComposeView(this).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+            
+            // 컨테이너에 ComposeView 추가
+            container.addView(composeView)
+            
+            // 실제 APK의 Compose UI 설정
+            composeView.setContent {
+                frontModule!!.FrontModuleScreen(
+                    FrontModuleContext(
+                        moduleId = "current_module", // 실제 모듈 ID로 대체 가능
+                        parameters = emptyMap()
+                    )
+                )
+            }
+            
+            // 레이아웃 측정 및 배치
+            container.measure(
+                android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
+            )
+            container.layout(0, 0, width, height)
+            
+            Log.d(TAG, "Real Compose UI rendered successfully")
+            
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to draw module UI on surface", e)
+            Log.e(TAG, "Failed to render Compose UI to surface", e)
         }
     }
 }
