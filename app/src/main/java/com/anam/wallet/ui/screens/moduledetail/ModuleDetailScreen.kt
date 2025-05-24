@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.anam.wallet.SimpleModuleManager
-import com.anam.wallet.core.IModuleUI
-import com.anam.wallet.core.IPaymentModule
+import com.anam.wallet.constants.ModuleConstants
+import com.anam.wallet.ui.components.FrontModuleSurface
 
 private const val TAG = "ModuleDetailScreen"
 
@@ -23,115 +23,42 @@ fun ModuleDetailScreen(
     moduleManager: SimpleModuleManager,
     onBackClick: () -> Unit
 ) {
-    // Get module from SimpleModuleManager
-    val module = moduleManager.getModule(moduleId)
+    // 다운로드된 모듈 확인
+    val isDownloaded = moduleManager.isModuleDownloaded(moduleId)
     
-    // Add logging to debug module loading issues
-    if (module == null) {
-        Log.e(TAG, "모듈을 찾을 수 없음: moduleId=$moduleId")
-        Log.d(TAG, "현재 로드된 모듈 목록: ${moduleManager.getLoadedModuleIds()}")
+    // 로깅
+    if (isDownloaded) {
+        Log.d(TAG, "프론트 모듈 발견: moduleId=$moduleId")
+        Log.d(TAG, "APK 경로: ${moduleManager.getModuleApkPath(moduleId)}")
     } else {
-        Log.d(TAG, "모듈 로드 성공: moduleId=$moduleId")
-        if (module is IPaymentModule) {
-            Log.d(TAG, "모듈 정보: 이름=${module.getName()}, 심볼=${module.getSymbol()}")
-        }
-        Log.d(TAG, "모듈 타입: ${module::class.java.name}")
-        Log.d(TAG, "모듈이 IModuleUI 구현 여부: ${module is IModuleUI}")
+        Log.e(TAG, "다운로드된 모듈을 찾을 수 없음: moduleId=$moduleId")
+        Log.d(TAG, "다운로드된 모듈 목록: ${moduleManager.getDownloadedModuleIds()}")
     }
     
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        if (module == null) {
-            // Module not found case
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+    if (isDownloaded) {
+        // 프론트 모듈 실행 (별도 프로세스)
+        Log.d(TAG, "프론트 모듈 별도 프로세스에서 실행 중")
+        
+        FrontModuleSurface(
+            moduleId = moduleId,
+            apkPath = moduleManager.getModuleApkPath(moduleId) ?: "",
+            className = ModuleConstants.FRONT_MODULE_IMPLEMENTATION_CLASS,
+            modifier = Modifier.fillMaxSize()
+        )
+    } else {
+        // 모듈을 찾을 수 없는 경우
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("모듈을 찾을 수 없습니다")
-                    Text("모듈 ID: $moduleId")
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onBackClick) {
-                        Text("뒤로 가기")
-                    }
-                }
+                Text("프론트 모듈을 찾을 수 없습니다")
+                Text("모듈 ID: $moduleId")
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("다운로드된 모듈을 확인해주세요")
             }
-        } else if (module is IModuleUI) {
-            // Module implements UI interface
-            Log.d(TAG, "IModuleUI 인터페이스 구현 모듈 UI 표시 중")
-            
-            // Context data to pass to the module
-            val uiContext = remember {
-                mutableMapOf<String, Any>(
-                    "onBack" to onBackClick
-                )
-            }
-            
-            // Render module's UI
-            (module as IModuleUI).ModuleDetailScreen(uiContext)
-        } else {
-            // Fallback UI for modules that don't implement IModuleUI
-            Log.d(TAG, "기본 UI 폴백 사용 중 (IModuleUI 미구현)")
-            FallbackModuleDetailUI(module, onBackClick)
-        }
-    }
-}
-
-// Fallback UI for modules that don't implement IModuleUI
-@Composable
-private fun FallbackModuleDetailUI(module: Any, onBackClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        if (module is IPaymentModule) {
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = module.getName(),
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Text(
-                        text = "심볼: ${module.getSymbol()}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        text = "모듈 정보",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(module.getModuleInfo())
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        text = "계정 정보",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(module.getAccounts())
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        text = "네트워크 정보",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(module.getNetworkInfo())
-                }
-            }
-        } else {
-            Log.w(TAG, "알 수 없는 모듈 타입: ${module::class.java.name}")
-            Text("모듈 타입을 인식할 수 없습니다")
         }
     }
 }

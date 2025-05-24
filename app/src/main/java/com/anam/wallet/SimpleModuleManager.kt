@@ -3,12 +3,7 @@ package com.anam.wallet
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.anam.wallet.core.IPaymentModule
-import com.anam.wallet.model.AccountInfo
-import com.anam.wallet.model.ModuleInfo
-import com.anam.wallet.model.ModuleMetadata
-import com.anam.wallet.model.NetworkInfo
-import dalvik.system.DexClassLoader
+import com.anam.wallet.constants.ModuleConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -35,12 +30,10 @@ class SimpleModuleManager(internal var context: Context?) {
             else -> "http://localhost:8080"
         }
         
-        // 구현 클래스 이름
-        private const val MODULE_IMPLEMENTATION_CLASS = "com.anam.wallet.apk.PaymentModuleImpl"
     }
     
-    // 로드된 모듈 저장
-    private val loadedModules = ConcurrentHashMap<String, IPaymentModule>()
+    // 다운로드된 모듈 메타데이터 저장
+    private val downloadedModules = ConcurrentHashMap<String, String>()
     
     // 모듈 캐시 디렉토리
     private val modulesCacheDir by lazy {
@@ -118,20 +111,17 @@ class SimpleModuleManager(internal var context: Context?) {
             apkFile.setWritable(false, false)
             onProgress(90)
             
-            // 5. 모듈 로드
-            Log.d(TAG, "모듈 로드 중: $moduleId (${apkFile.absolutePath})")
-            val success = loadModule(moduleId, apkFile)
+            // 5. 다운로드 완료
             val endTime = System.currentTimeMillis()
-            Log.d(TAG, "모듈 로드 결과: $success, 총 소요 시간: ${endTime - startTime}ms")
+            Log.d(TAG, "프론트 모듈 다운로드 완료: $moduleId (${apkFile.absolutePath})")
+            Log.d(TAG, "총 소요 시간: ${endTime - startTime}ms")
             
-            // 6. 결과 전달
-            if (success) {
-                onProgress(100)
-                val moduleName = getModule(moduleId)?.getName() ?: "Unknown"
-                onComplete(true, "모듈 로드 성공: $moduleName")
-            } else {
-                onComplete(false, "모듈 로드 실패")
-            }
+            // 6. 다운로드 완료 기록
+            downloadedModules[moduleId] = apkFile.absolutePath
+            
+            // 7. 결과 전달
+            onProgress(100)
+            onComplete(true, "프론트 모듈 다운로드 완료")
             
         } catch (e: Exception) {
             Log.e(TAG, "모듈 다운로드 및 로드 중 오류 발생", e)
@@ -219,144 +209,43 @@ class SimpleModuleManager(internal var context: Context?) {
         }
     }
     
+    
     /**
-     * 모듈 로드 함수
+     * 다운로드된 모듈 ID 목록 가져오기
      */
-    private fun loadModule(moduleId: String, apkFile: File): Boolean {
-        try {
-            // 파일 유효성 검사
-            if (!apkFile.exists() || !apkFile.canRead()) {
-                Log.e(TAG, "APK 파일이 존재하지 않거나 읽을 수 없음: ${apkFile.absolutePath}")
-                return false
-            }
-            
-            // 보안 검사
-            if (apkFile.canWrite()) {
-                Log.e(TAG, "보안 위반: APK 파일이 쓰기 가능함")
-                return false
-            }
-            
-            // DexClassLoader 생성
-            val classLoader = DexClassLoader(
-                apkFile.absolutePath,
-                optimizedDexDir.absolutePath,
-                null,
-                requireContext().classLoader
-            )
-            
-            try {
-                // 모듈 구현 클래스 로드
-                val moduleClass = classLoader.loadClass(MODULE_IMPLEMENTATION_CLASS)
-                
-                // IPaymentModule 인터페이스 구현 여부 검사
-                val moduleInterface = Class.forName("com.anam.wallet.core.IPaymentModule")
-                if (!moduleInterface.isAssignableFrom(moduleClass)) {
-                    Log.e(TAG, "클래스가 IPaymentModule 인터페이스를 구현하지 않음")
-                    return false
-                }
-                
-                // 모듈 인스턴스 생성
-                val moduleInstance = moduleClass.getDeclaredConstructor().newInstance() as IPaymentModule
-                
-                // 모듈 저장
-                loadedModules[moduleId] = moduleInstance
-                
-                // 모듈 기본 정보 로깅
-                val name = moduleInstance.getName()
-                val symbol = moduleInstance.getSymbol()
-                Log.d(TAG, "모듈 로드 성공: $moduleId ($name, $symbol)")
-                
-                return true
-            } catch (e: Exception) {
-                Log.e(TAG, "모듈 클래스 로드 중 오류", e)
-                return false
+    fun getDownloadedModuleIds(): Set<String> = downloadedModules.keys
+    
+    /**
+     * 모듈 다운로드 여부 확인
+     */
+    fun isModuleDownloaded(moduleId: String): Boolean = downloadedModules.containsKey(moduleId)
+    
+    /**
+     * 다운로드된 모듈 APK 경로 가져오기
+     */
+    fun getModuleApkPath(moduleId: String): String? {
+        return if (isModuleDownloaded(moduleId)) {
+            File(modulesCacheDir, "module_$moduleId.apk").absolutePath
+        } else null
+    }
+    
+    /**
+     * 모듈 삭제 (APK 파일 삭제)
+     */
+    fun deleteModule(moduleId: String): Boolean {
+        return try {
+            val apkFile = File(modulesCacheDir, "module_$moduleId.apk")
+            if (apkFile.exists()) {
+                apkFile.delete()
+                downloadedModules.remove(moduleId)
+                Log.d(TAG, "모듈 삭제 완료: $moduleId")
+                true
+            } else {
+                Log.w(TAG, "삭제할 모듈 파일이 없음: $moduleId")
+                false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "모듈 로드 중 오류", e)
-            return false
-        }
-    }
-    
-    /**
-     * 로드된 모듈 ID 목록 가져오기
-     */
-    fun getLoadedModuleIds(): Set<String> = loadedModules.keys
-    
-    /**
-     * 모듈 로드 여부 확인
-     */
-    fun isModuleLoaded(moduleId: String): Boolean = loadedModules.containsKey(moduleId)
-    
-    /**
-     * 모듈 인스턴스 가져오기
-     */
-    fun getModule(moduleId: String): IPaymentModule? = loadedModules[moduleId]
-    
-    /**
-     * 모듈 정보 가져오기
-     */
-    fun getModuleInfo(moduleId: String): ModuleInfo? {
-        val module = getModule(moduleId) ?: return null
-        return try {
-            ModuleInfo.fromJson(module.getModuleInfo())
-        } catch (e: Exception) {
-            Log.e(TAG, "모듈 정보 파싱 오류", e)
-            null
-        }
-    }
-    
-    /**
-     * 모듈 계정 목록 가져오기
-     */
-    fun getModuleAccounts(moduleId: String): List<AccountInfo>? {
-        val module = getModule(moduleId) ?: return null
-        return try {
-            AccountInfo.fromJsonArray(module.getAccounts())
-        } catch (e: Exception) {
-            Log.e(TAG, "모듈 계정 정보 파싱 오류", e)
-            null
-        }
-    }
-    
-    /**
-     * 모듈 네트워크 정보 가져오기
-     */
-    fun getNetworkInfo(moduleId: String): NetworkInfo? {
-        val module = getModule(moduleId) ?: return null
-        return try {
-            NetworkInfo.fromJson(module.getNetworkInfo())
-        } catch (e: Exception) {
-            Log.e(TAG, "네트워크 정보 파싱 오류", e)
-            null
-        }
-    }
-    
-    /**
-     * 모듈 요약 정보 가져오기
-     */
-    fun getModuleSummary(moduleId: String): Map<String, String> {
-        val module = getModule(moduleId) ?: return mapOf("error" to "모듈이 로드되지 않음")
-        
-        return try {
-            mapOf(
-                "name" to module.getName(),
-                "symbol" to module.getSymbol(),
-                "accounts" to module.getAccounts(),
-                "networkInfo" to module.getNetworkInfo()
-            )
-        } catch (e: Exception) {
-            mapOf("error" to "모듈 정보 조회 중 오류: ${e.message}")
-        }
-    }
-    
-    /**
-     * 모듈 언로드
-     */
-    fun unloadModule(moduleId: String): Boolean {
-        return if (loadedModules.containsKey(moduleId)) {
-            loadedModules.remove(moduleId)
-            true
-        } else {
+            Log.e(TAG, "모듈 삭제 중 오류", e)
             false
         }
     }
