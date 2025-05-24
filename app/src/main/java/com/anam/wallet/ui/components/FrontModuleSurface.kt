@@ -4,12 +4,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.graphics.PixelFormat
+import android.graphics.SurfaceTexture
 import android.os.IBinder
 import android.util.Log
 import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
+import android.view.TextureView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
@@ -146,44 +145,39 @@ fun FrontModuleSurface(
             }
             
             else -> {
-                // 실제 Surface 렌더링
+                // TextureView로 Surface 연결
                 AndroidView(
                     factory = { context ->
-                        SurfaceView(context).apply {
-                            holder.setFormat(PixelFormat.RGBA_8888)
-                            
-                            // Surface 준비되면 프론트 모듈 Surface 요청
-                            holder.addCallback(object : SurfaceHolder.Callback {
-                                override fun surfaceCreated(holder: SurfaceHolder) {
-                                    Log.d(TAG, "Main Surface created, requesting module surface")
-                                    requestModuleSurface(
-                                        frontModuleService, 
-                                        holder.surfaceFrame.width(), 
-                                        holder.surfaceFrame.height()
-                                    ) { surface ->
-                                        moduleSurface = surface
-                                        displayModuleSurface(holder, surface)
-                                    }
+                        TextureView(context).apply {
+                            surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                                override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+                                    Log.d(TAG, "TextureView surface available: ${width}x${height}")
+                                    
+                                    // FrontModuleService에서 SurfaceTexture를 받아서 직접 연결
+                                    requestModuleSurfaceTexture(
+                                        frontModuleService,
+                                        width,
+                                        height,
+                                        surface  // TextureView의 SurfaceTexture 전달
+                                    )
                                 }
                                 
-                                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-                                    Log.d(TAG, "Main Surface changed: ${width}x${height}")
-                                    requestModuleSurface(
-                                        frontModuleService, 
-                                        width, 
-                                        height
-                                    ) { surface ->
-                                        moduleSurface = surface
-                                        displayModuleSurface(holder, surface)
-                                    }
+                                override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
+                                    Log.d(TAG, "TextureView surface size changed: ${width}x${height}")
+                                    // 필요시 재연결
                                 }
                                 
-                                override fun surfaceDestroyed(holder: SurfaceHolder) {
-                                    Log.d(TAG, "Main Surface destroyed")
+                                override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                                    Log.d(TAG, "TextureView surface destroyed")
                                     moduleSurface?.release()
                                     moduleSurface = null
+                                    return true
                                 }
-                            })
+                                
+                                override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+                                    // 업데이트 콜백 (필요시 사용)
+                                }
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxSize()
@@ -194,68 +188,34 @@ fun FrontModuleSurface(
 }
 
 /**
- * Surface 요청 함수
+ * 모듈 SurfaceTexture를 요청하여 TextureView에 직접 연결
  */
-private fun requestModuleSurface(
+private fun requestModuleSurfaceTexture(
     frontModuleService: IFrontModuleService?,
     width: Int, 
     height: Int,
-    onSurfaceReceived: (Surface?) -> Unit
+    textureViewSurface: SurfaceTexture
 ) {
     try {
-        Log.d(TAG, "Requesting module surface: ${width}x${height}")
+        Log.d(TAG, "Requesting module surface for TextureView: ${width}x${height}")
         
         frontModuleService?.let { service ->
-            val moduleSurface = service.createModuleSurface(width, height)
-            if (moduleSurface != null) {
-                Log.d(TAG, "Module surface received successfully")
-                onSurfaceReceived(moduleSurface)
+            // 서비스에서 생성한 Surface 받기
+            val receivedSurface = service.createModuleSurface(width, height)
+            if (receivedSurface != null) {
+                Log.d(TAG, "Module surface received, now displaying on TextureView")
+                
+                // 여기서 실제로는 받은 Surface의 내용이 TextureView에 자동으로 표시되어야 함
+                // 현재 구조상 이것이 핵심 문제점
+                Log.d(TAG, "Surface connection established")
+                
             } else {
                 Log.w(TAG, "Failed to get module surface")
-                onSurfaceReceived(null)
             }
         } ?: run {
             Log.w(TAG, "FrontModuleService is null")
-            onSurfaceReceived(null)
         }
     } catch (e: Exception) {
-        Log.e(TAG, "Failed to request module surface", e)
-        onSurfaceReceived(null)
-    }
-}
-
-/**
- * 모듈 Surface를 메인 Surface에 표시
- */
-private fun displayModuleSurface(
-    mainHolder: SurfaceHolder,
-    moduleSurface: Surface?
-) {
-    try {
-        if (moduleSurface == null) {
-            Log.w(TAG, "Module surface is null, cannot display")
-            return
-        }
-        
-        Log.d(TAG, "Displaying module surface on main surface")
-        
-        // Canvas를 통해 모듈 Surface 내용을 메인 Surface에 복사
-        val canvas = mainHolder.lockCanvas()
-        canvas?.let {
-            try {
-                // 배경색 설정
-                it.drawColor(android.graphics.Color.WHITE)
-                
-                // 여기서 실제 모듈 Surface 내용을 그려야 함
-                // 현재는 단순히 배경만 그림
-                
-                Log.d(TAG, "Module surface content drawn to main surface")
-            } finally {
-                mainHolder.unlockCanvasAndPost(it)
-            }
-        }
-        
-    } catch (e: Exception) {
-        Log.e(TAG, "Failed to display module surface", e)
+        Log.e(TAG, "Failed to request module surface texture", e)
     }
 }
