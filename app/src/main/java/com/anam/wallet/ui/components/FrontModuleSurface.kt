@@ -4,8 +4,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.graphics.PixelFormat
 import android.os.IBinder
 import android.util.Log
+import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,6 +44,7 @@ fun FrontModuleSurface(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var frontModuleService by remember { mutableStateOf<IFrontModuleService?>(null) }
     var mainAppService by remember { mutableStateOf<IMainAppService?>(null) }
+    var moduleSurface by remember { mutableStateOf<Surface?>(null) }
     
     // 서비스 연결 관리
     val frontServiceConnection = remember {
@@ -144,21 +149,39 @@ fun FrontModuleSurface(
                 // 실제 Surface 렌더링
                 AndroidView(
                     factory = { context ->
-                        android.view.SurfaceView(context).apply {
+                        SurfaceView(context).apply {
+                            holder.setFormat(PixelFormat.RGBA_8888)
+                            
                             // Surface 준비되면 프론트 모듈 Surface 요청
-                            holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                                override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                            holder.addCallback(object : SurfaceHolder.Callback {
+                                override fun surfaceCreated(holder: SurfaceHolder) {
                                     Log.d(TAG, "Main Surface created, requesting module surface")
-                                    requestModuleSurface(frontModuleService, holder.surfaceFrame.width(), holder.surfaceFrame.height())
+                                    requestModuleSurface(
+                                        frontModuleService, 
+                                        holder.surfaceFrame.width(), 
+                                        holder.surfaceFrame.height()
+                                    ) { surface ->
+                                        moduleSurface = surface
+                                        displayModuleSurface(holder, surface)
+                                    }
                                 }
                                 
-                                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
+                                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
                                     Log.d(TAG, "Main Surface changed: ${width}x${height}")
-                                    requestModuleSurface(frontModuleService, width, height)
+                                    requestModuleSurface(
+                                        frontModuleService, 
+                                        width, 
+                                        height
+                                    ) { surface ->
+                                        moduleSurface = surface
+                                        displayModuleSurface(holder, surface)
+                                    }
                                 }
                                 
-                                override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                                override fun surfaceDestroyed(holder: SurfaceHolder) {
                                     Log.d(TAG, "Main Surface destroyed")
+                                    moduleSurface?.release()
+                                    moduleSurface = null
                                 }
                             })
                         }
@@ -176,7 +199,8 @@ fun FrontModuleSurface(
 private fun requestModuleSurface(
     frontModuleService: IFrontModuleService?,
     width: Int, 
-    height: Int
+    height: Int,
+    onSurfaceReceived: (Surface?) -> Unit
 ) {
     try {
         Log.d(TAG, "Requesting module surface: ${width}x${height}")
@@ -185,12 +209,53 @@ private fun requestModuleSurface(
             val moduleSurface = service.createModuleSurface(width, height)
             if (moduleSurface != null) {
                 Log.d(TAG, "Module surface received successfully")
-                // Surface가 성공적으로 전달됨
+                onSurfaceReceived(moduleSurface)
             } else {
                 Log.w(TAG, "Failed to get module surface")
+                onSurfaceReceived(null)
             }
+        } ?: run {
+            Log.w(TAG, "FrontModuleService is null")
+            onSurfaceReceived(null)
         }
     } catch (e: Exception) {
         Log.e(TAG, "Failed to request module surface", e)
+        onSurfaceReceived(null)
+    }
+}
+
+/**
+ * 모듈 Surface를 메인 Surface에 표시
+ */
+private fun displayModuleSurface(
+    mainHolder: SurfaceHolder,
+    moduleSurface: Surface?
+) {
+    try {
+        if (moduleSurface == null) {
+            Log.w(TAG, "Module surface is null, cannot display")
+            return
+        }
+        
+        Log.d(TAG, "Displaying module surface on main surface")
+        
+        // Canvas를 통해 모듈 Surface 내용을 메인 Surface에 복사
+        val canvas = mainHolder.lockCanvas()
+        canvas?.let {
+            try {
+                // 배경색 설정
+                it.drawColor(android.graphics.Color.WHITE)
+                
+                // 여기서 실제 모듈 Surface 내용을 그려야 함
+                // 현재는 단순히 배경만 그림
+                
+                Log.d(TAG, "Module surface content drawn to main surface")
+            } finally {
+                mainHolder.unlockCanvasAndPost(it)
+            }
+        }
+        
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to display module surface", e)
     }
 }

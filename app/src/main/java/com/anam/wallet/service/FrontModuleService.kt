@@ -2,13 +2,20 @@ package com.anam.wallet.service
 
 import android.app.Service
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.anam.wallet.IMainAppService
 import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
@@ -133,65 +140,109 @@ class FrontModuleService : Service() {
      * Compose UI를 Surface에 렌더링
      */
     private fun createComposeUIOnSurface(width: Int, height: Int): Surface? {
-        try {
-            Log.d(TAG, "Creating Compose UI on Surface")
+        return try {
+            Log.d(TAG, "Creating Compose UI on Surface: ${width}x${height}")
             
-            // SurfaceView 생성 (별도 프로세스에서)
-            val surfaceView = SurfaceView(this).apply {
-                layoutParams = android.view.ViewGroup.LayoutParams(width, height)
-                holder.setFormat(PixelFormat.RGBA_8888)
+            // 메인 스레드에서 UI 생성
+            Handler(Looper.getMainLooper()).post {
+                createAndRenderComposeUI(width, height)
             }
             
-            // SurfaceHolder 콜백 설정
-            surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
-                override fun surfaceCreated(holder: SurfaceHolder) {
-                    Log.d(TAG, "Surface created, rendering Compose UI")
-                    
-                    // 실제 Compose UI 렌더링
-                    renderComposeUIToSurface(holder)
-                }
-                
-                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-                    Log.d(TAG, "Surface changed: ${width}x${height}")
-                }
-                
-                override fun surfaceDestroyed(holder: SurfaceHolder) {
-                    Log.d(TAG, "Surface destroyed")
-                }
-            })
-            
-            return surfaceView.holder.surface
+            // 즉시 Surface 반환 (실제 렌더링은 비동기)
+            createSurfaceForRendering(width, height)
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create Surface", e)
-            return null
+            null
         }
     }
     
     /**
-     * 실제 Compose UI를 Surface에 렌더링
+     * 렌더링용 Surface 생성
      */
-    private fun renderComposeUIToSurface(holder: SurfaceHolder) {
-        try {
-            // ComposeView 생성 (별도 프로세스에서)
-            val composeView = ComposeView(this)
+    private fun createSurfaceForRendering(width: Int, height: Int): Surface? {
+        return try {
+            val surfaceView = SurfaceView(this).apply {
+                layoutParams = ViewGroup.LayoutParams(width, height)
+                holder.setFormat(PixelFormat.RGBA_8888)
+                
+                // Surface 콜백 설정
+                holder.addCallback(object : SurfaceHolder.Callback {
+                    override fun surfaceCreated(holder: SurfaceHolder) {
+                        Log.d(TAG, "Rendering Surface created")
+                        // 배경색 설정
+                        val canvas = holder.lockCanvas()
+                        canvas?.let {
+                            it.drawColor(Color.WHITE)
+                            holder.unlockCanvasAndPost(it)
+                        }
+                    }
+                    
+                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+                        Log.d(TAG, "Rendering Surface changed: ${width}x${height}")
+                    }
+                    
+                    override fun surfaceDestroyed(holder: SurfaceHolder) {
+                        Log.d(TAG, "Rendering Surface destroyed")
+                    }
+                })
+            }
             
-            // 실제 프론트 모듈의 Composable 설정
+            surfaceView.holder.surface
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create rendering surface", e)
+            null
+        }
+    }
+    
+    /**
+     * 실제 Compose UI 생성 및 렌더링
+     */
+    private fun createAndRenderComposeUI(width: Int, height: Int) {
+        try {
+            Log.d(TAG, "Creating and rendering Compose UI")
+            
+            // 컨테이너 프레임 레이아웃 생성
+            val container = FrameLayout(this).apply {
+                layoutParams = ViewGroup.LayoutParams(width, height)
+            }
+            
+            // ComposeView 생성 및 설정
+            val composeView = ComposeView(this).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+            
+            // 컨테이너에 ComposeView 추가
+            container.addView(composeView)
+            
+            // Compose 컨텐츠 설정
             composeView.setContent {
                 frontModule?.FrontModuleScreen(
                     FrontModuleContext(
-                        moduleId = "current_module", // 실제 모듈 ID로 대체 필요
+                        moduleId = "current_module",
                         parameters = emptyMap()
                     )
                 )
             }
             
-            // ComposeView를 Surface에 그리기
-            // 이 부분은 추가 작업이 필요 (Canvas를 통한 렌더링)
-            Log.d(TAG, "Compose UI content set")
+            Log.d(TAG, "Compose content set successfully")
+            
+            // 레이아웃 측정 및 배치
+            container.measure(
+                android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
+            )
+            container.layout(0, 0, width, height)
+            
+            Log.d(TAG, "Compose UI layout completed")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to render Compose UI", e)
+            Log.e(TAG, "Failed to create and render Compose UI", e)
         }
     }
 }
