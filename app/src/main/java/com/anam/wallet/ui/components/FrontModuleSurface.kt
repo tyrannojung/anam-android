@@ -1,14 +1,6 @@
 package com.anam.wallet.ui.components
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.Build
-import android.os.IBinder
 import android.util.Log
-import android.view.SurfaceControlViewHost
-import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,18 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.anam.wallet.IFrontModuleService
-import com.anam.wallet.IMainAppService
-import com.anam.wallet.service.FrontModuleService
-import com.anam.wallet.service.MainAppService
+import com.anam.wallet.core.IFrontModuleUI
+import com.anam.wallet.core.FrontModuleContext
+import com.anam.wallet.service.SimpleMainAppService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val TAG = "FrontModuleSurface"
 
 /**
- * 프론트 모듈을 별도 프로세스에서 실행하고 
- * SurfaceControlViewHost를 통해 UI를 렌더링하는 컴포넌트
- * API 29+ (Android 10+) 에서만 동작
+ * 외부 APK 모듈을 직접 로드하여 Compose UI를 렌더링하는 컴포넌트
+ * 단순화된 버전 - 별도 프로세스나 SurfaceControlViewHost 없이 직접 렌더링
  */
 @Composable
 fun FrontModuleSurface(
@@ -40,69 +31,36 @@ fun FrontModuleSurface(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var moduleInstance by remember { mutableStateOf<IFrontModuleUI?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var frontModuleService by remember { mutableStateOf<IFrontModuleService?>(null) }
-    var mainAppService by remember { mutableStateOf<IMainAppService?>(null) }
     
-    // 서비스 연결 관리
-    val frontServiceConnection = remember {
-        object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                Log.d(TAG, "FrontModuleService connected")
-                frontModuleService = IFrontModuleService.Stub.asInterface(service)
-                
-                // 메인앱 서비스가 준비되면 프론트 모듈 로드
-                mainAppService?.let { mainService ->
-                    frontModuleService?.setMainAppService(mainService)
-                    frontModuleService?.loadModule(apkPath, className, moduleId)
-                    isLoading = false
-                }
-            }
-            
-            override fun onServiceDisconnected(name: ComponentName?) {
-                Log.d(TAG, "FrontModuleService disconnected")
-                frontModuleService = null
-                errorMessage = "프론트 모듈 서비스 연결이 끊어졌습니다"
-            }
-        }
-    }
-    
-    val mainServiceConnection = remember {
-        object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                Log.d(TAG, "MainAppService connected")
-                mainAppService = IMainAppService.Stub.asInterface(service)
-                
-                // 프론트 모듈 서비스가 준비되면 설정
-                frontModuleService?.let { frontService ->
-                    frontService.setMainAppService(mainAppService!!)
-                    frontService.loadModule(apkPath, className, moduleId)
-                    isLoading = false
-                }
-            }
-            
-            override fun onServiceDisconnected(name: ComponentName?) {
-                Log.d(TAG, "MainAppService disconnected")
-                mainAppService = null
-            }
-        }
-    }
-    
-    // 서비스 연결 시작
+    // 백그라운드에서 모듈 로드
     LaunchedEffect(moduleId) {
         try {
-            // 메인앱 서비스 연결
-            val mainIntent = Intent(context, MainAppService::class.java)
-            context.bindService(mainIntent, mainServiceConnection, Context.BIND_AUTO_CREATE)
+            Log.d(TAG, "Loading front module: $className from $apkPath")
             
-            // 프론트 모듈 서비스 연결
-            val frontIntent = Intent(context, FrontModuleService::class.java)
-            context.bindService(frontIntent, frontServiceConnection, Context.BIND_AUTO_CREATE)
+            val loadedModule = withContext(Dispatchers.IO) {
+                loadModuleFromApk(apkPath, className)
+            }
+            
+            if (loadedModule is IFrontModuleUI) {
+                // SimpleMainAppService 인스턴스 생성 및 설정
+                val mainAppService = SimpleMainAppService()
+                loadedModule.setMainAppService(mainAppService)
+                loadedModule.onModuleStart()
+                
+                moduleInstance = loadedModule
+                Log.d(TAG, "Front module loaded successfully")
+            } else {
+                errorMessage = "Module does not implement IFrontModuleUI"
+                Log.e(TAG, errorMessage!!)
+            }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to bind services", e)
-            errorMessage = "서비스 연결 실패: ${e.message}"
+            errorMessage = "Failed to load module: ${e.message}"
+            Log.e(TAG, errorMessage!!, e)
+        } finally {
             isLoading = false
         }
     }
@@ -111,9 +69,8 @@ fun FrontModuleSurface(
     DisposableEffect(Unit) {
         onDispose {
             try {
-                frontModuleService?.stopModule()
-                context.unbindService(frontServiceConnection)
-                context.unbindService(mainServiceConnection)
+                moduleInstance?.onModuleStop()
+                moduleInstance?.onModuleDestroy()
             } catch (e: Exception) {
                 Log.e(TAG, "Error during cleanup", e)
             }
@@ -144,114 +101,44 @@ fun FrontModuleSurface(
                 )
             }
             
-            else -> {
-                // API 버전 체크
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    // SurfaceView로 SurfacePackage 연결
-                    AndroidView(
-                        factory = { context ->
-                            SurfaceView(context).apply {
-                                // 터치 이벤트를 위해 포커스 설정
-                                isFocusableInTouchMode = true
-                                requestFocus()
-                                
-                                // SurfaceView가 준비되면 SurfacePackage 요청
-                                holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                                    override fun surfaceCreated(holder: android.view.SurfaceHolder) {
-                                        Log.d(TAG, "SurfaceView surface created")
-                                    }
-                                    
-                                    override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
-                                        Log.d(TAG, "SurfaceView surface changed: ${width}x${height}")
-                                        
-                                        // 프론트 모듈 서비스에서 SurfacePackage를 받아서 SurfaceView에 연결
-                                        requestModuleSurfacePackage(
-                                            frontModuleService,
-                                            this@apply,
-                                            width,
-                                            height
-                                        )
-                                    }
-                                    
-                                    override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
-                                        Log.d(TAG, "SurfaceView surface destroyed")
-                                    }
-                                })
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
+            moduleInstance != null -> {
+                // 직접 Compose UI 렌더링
+                moduleInstance!!.FrontModuleScreen(
+                    FrontModuleContext(
+                        moduleId = moduleId,
+                        parameters = emptyMap()
                     )
-                } else {
-                    // API 29 미만에서는 에러 메시지 표시
-                    Text(
-                        text = "SurfaceControlViewHost는 Android 10 (API 29) 이상에서만 지원됩니다",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                )
             }
         }
     }
 }
 
 /**
- * 프론트 모듈 서비스에서 SurfacePackage를 받아서 SurfaceView에 연결
- * API 29+ (Android 10+) 에서만 동작
+ * APK 파일에서 모듈을 동적으로 로드
  */
-private fun requestModuleSurfacePackage(
-    frontModuleService: IFrontModuleService?,
-    surfaceView: SurfaceView,
-    width: Int, 
-    height: Int
-) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+private fun loadModuleFromApk(apkPath: String, className: String): Any {
+    Log.d(TAG, "Loading module from APK: $apkPath")
+    Log.d(TAG, "Class name: $className")
     
-    var retryCount = 0
-    fun tryRequest() {
-        try {
-            Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
-            
-            frontModuleService?.let { service ->
-                // SurfaceView의 hostToken 가져오기 (API 29+)
-                val hostToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    surfaceView.hostToken
-                } else {
-                    null
-                }
-                
-                if (hostToken == null) {
-                    // hostToken이 아직 null이면 한 프레임 뒤 재시도
-                    Log.w(TAG, "hostToken 아직 null – 16ms 후 재시도")
-                    surfaceView.postDelayed({ tryRequest() }, 16)
-                    return@let
-                }
-                
-                Log.d(TAG, "hostToken: ${if (hostToken != null) "OK" else "NULL"}")
-                
-                // 서비스에서 SurfaceControlViewHost가 생성한 SurfacePackage 받기
-                val surfacePackage = service.createModuleSurfacePackage(hostToken, width, height)
-                if (surfacePackage != null) {
-                    Log.d(TAG, "Module SurfacePackage received from SurfaceControlViewHost")
-                    
-                    // SurfacePackage를 SurfaceView에 설정
-                    surfaceView.setChildSurfacePackage(surfacePackage)
-                    
-                    Log.d(TAG, "SurfacePackage attached – single-process ✓")
-                    
-                } else if (retryCount < 5) {
-                    // SurfacePackage null인 경우 재시도 (최대 5회)
-                    retryCount++
-                    Log.d(TAG, "SurfacePackage null – retry $retryCount/5 in 500ms")
-                    surfaceView.postDelayed({ tryRequest() }, 500)   // 500ms 간격 재시도
-                } else {
-                    Log.e(TAG, "SurfacePackage null after $retryCount retries - giving up")
-                }
-            } ?: run {
-                Log.w(TAG, "FrontModuleService is null")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to request module surface package", e)
-        }
+    // APK 파일 유효성 검사
+    val apkFile = java.io.File(apkPath)
+    if (!apkFile.exists() || !apkFile.canRead()) {
+        throw IllegalArgumentException("APK 파일이 존재하지 않거나 읽을 수 없음: $apkPath")
     }
     
-    tryRequest()
+    // DexClassLoader로 외부 APK 로드
+    val classLoader = dalvik.system.DexClassLoader(
+        apkPath,
+        "/data/data/com.anam.wallet/cache", // 고정된 캐시 경로 사용
+        null,
+        Thread.currentThread().contextClassLoader
+    )
+    
+    // 외부 APK에서 클래스 로드
+    val moduleClass = classLoader.loadClass(className)
+    val moduleInstance = moduleClass.getDeclaredConstructor().newInstance()
+    
+    Log.d(TAG, "Module loaded successfully: ${moduleInstance::class.java.name}")
+    return moduleInstance
 }

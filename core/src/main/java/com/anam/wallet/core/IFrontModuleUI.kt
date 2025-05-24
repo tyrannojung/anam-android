@@ -17,9 +17,9 @@ interface IFrontModuleUI {
     
     /**
      * 메인앱 서비스 연결 설정
-     * AIDL을 통해 메인앱의 기능 사용 가능
+     * IMainApp 인터페이스를 통해 메인앱의 기능 사용 가능
      */
-    fun setMainAppService(service: Any) // TODO: IMainAppService로 변경 예정
+    fun setMainAppService(service: IMainApp)
     
     /**
      * 모듈 시작 시 호출

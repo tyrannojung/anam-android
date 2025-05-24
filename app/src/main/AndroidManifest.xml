@@ -29,15 +29,6 @@
             </intent-filter>
         </activity>
         
-        <!-- 메인앱 서비스 (VP 요청 처리) -->
-        <service
-            android:name=".service.MainAppService"
-            android:exported="false" />
-            
-        <!-- 프론트 모듈 서비스 (단일 프로세스) -->
-        <service
-            android:name=".service.FrontModuleService"
-            android:exported="false" />
             
     </application>
 
