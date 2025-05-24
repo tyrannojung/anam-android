@@ -200,27 +200,21 @@ class FrontModuleService : Service() {
      */
     private fun createSurfaceControlViewHost(hostToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
         return try {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                Log.e(TAG, "SurfaceControlViewHost requires API 29+")
-                return null
-            }
-            
             Log.d(TAG, "Creating SurfaceControlViewHost: ${width}x${height}")
             
             // DisplayManager를 통해 기본 디스플레이 얻기
             val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
             val defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
             
-            // hostToken을 넣은 WindowContext 생성 (터치/IME 포커스 문제 해결)
+            // WindowContext 생성 (터치/IME 포커스 문제 해결)
             val windowContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // API 30+에서는 Bundle 파라미터를 사용 (hostToken은 SCVH 생성자에서 직접 사용)
                 createWindowContext(
                     defaultDisplay,
                     WindowManager.LayoutParams.TYPE_APPLICATION,
-                    null  // Bundle 파라미터는 null
+                    null
                 )
             } else {
-                createDisplayContext(defaultDisplay)  // API 29
+                createDisplayContext(defaultDisplay)
             }
             
             // UI 객체는 메인 루퍼에서 생성해야 함 (Binder 스레드에서 직접 생성하면 안 됨)
@@ -229,19 +223,14 @@ class FrontModuleService : Service() {
             
             Handler(Looper.getMainLooper()).post {
                 try {
-                    // SurfaceControlViewHost 생성 - 메인 스레드에서
-                    surfaceControlViewHost = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        // API 30+ (Android 11+): (Context, Display, IBinder) 3-파라미터
-                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
-                    } else {
-                        // API 29 (Android 10): (Context, Display, IBinder) 3-파라미터 (IBinder nullable)
-                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
-                    }
+                    // SurfaceControlViewHost 생성
+                    surfaceControlViewHost = SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
                     
                     // LifecycleOwner 생성 및 시작
                     hostLifecycleOwner = HostLifecycleOwner().apply {
                         moveTo(Lifecycle.State.CREATED)   // performRestore()
                         moveTo(Lifecycle.State.STARTED)
+                        moveTo(Lifecycle.State.RESUMED)   // 터치 이벤트 활성화
                     }
                     
                     // ComposeView 생성 - 메인 스레드에서
