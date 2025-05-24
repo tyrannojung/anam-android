@@ -5,17 +5,11 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Rect
+import android.media.ImageReader
 import android.os.IBinder
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
-import android.view.ViewGroup
-import android.widget.FrameLayout
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.anam.wallet.IMainAppService
 import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
@@ -137,36 +131,21 @@ class FrontModuleService : Service() {
     }
     
     /**
-     * Compose UI를 Surface에 렌더링
+     * ImageReader를 사용하여 Window에 의존하지 않는 Surface 생성
      */
     private fun createComposeUIOnSurface(width: Int, height: Int): Surface? {
         return try {
-            Log.d(TAG, "Creating module surface: ${width}x${height}")
+            Log.d(TAG, "Creating module surface with ImageReader: ${width}x${height}")
             
-            // 애플리케이션 컨텍스트에서 SurfaceView 생성
-            val surfaceView = SurfaceView(this)
-            surfaceView.layoutParams = ViewGroup.LayoutParams(width, height)
-            surfaceView.holder.setFormat(PixelFormat.RGBA_8888)
+            // ImageReader로 Window-less Surface 생성
+            val imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 1)
+            val surface = imageReader.surface
             
-            // Surface에 모듈 UI 내용 그리기
-            surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
-                override fun surfaceCreated(holder: SurfaceHolder) {
-                    Log.d(TAG, "Module surface created, drawing content")
-                    drawModuleUIOnSurface(holder)
-                }
-                
-                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-                    Log.d(TAG, "Module surface changed: ${width}x${height}")
-                    drawModuleUIOnSurface(holder)
-                }
-                
-                override fun surfaceDestroyed(holder: SurfaceHolder) {
-                    Log.d(TAG, "Module surface destroyed")
-                }
-            })
+            // Surface에 직접 그리기
+            drawModuleUIOnSurface(surface, width, height)
             
-            Log.d(TAG, "Module surface created successfully")
-            surfaceView.holder.surface
+            Log.d(TAG, "Module surface created and drawn successfully")
+            surface
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create module surface", e)
@@ -175,13 +154,13 @@ class FrontModuleService : Service() {
     }
     
     /**
-     * Surface에 모듈 UI 그리기
+     * Surface에 모듈 UI 직접 그리기
      */
-    private fun drawModuleUIOnSurface(holder: SurfaceHolder) {
+    private fun drawModuleUIOnSurface(surface: Surface, width: Int, height: Int) {
         try {
-            Log.d(TAG, "Drawing module UI on surface")
+            Log.d(TAG, "Drawing module UI directly on surface")
             
-            val canvas = holder.lockCanvas()
+            val canvas = surface.lockCanvas(Rect(0, 0, width, height))
             canvas?.let {
                 try {
                     // 배경색 설정
@@ -206,10 +185,14 @@ class FrontModuleService : Service() {
                         it.drawText("Status: Module not loaded", 100f, 400f, paint)
                     }
                     
+                    // 추가 정보
+                    it.drawText("Surface: ${width}x${height}", 100f, 600f, paint)
+                    it.drawText("Process: ${android.os.Process.myPid()}", 100f, 700f, paint)
+                    
                     Log.d(TAG, "Module UI drawn successfully on surface")
                     
                 } finally {
-                    holder.unlockCanvasAndPost(it)
+                    surface.unlockCanvasAndPost(it)
                 }
             }
             
