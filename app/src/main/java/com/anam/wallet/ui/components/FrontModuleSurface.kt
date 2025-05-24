@@ -4,11 +4,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.graphics.SurfaceTexture
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import android.view.Surface
-import android.view.TextureView
+import android.view.SurfaceControlViewHost
+import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +29,8 @@ private const val TAG = "FrontModuleSurface"
 
 /**
  * 프론트 모듈을 별도 프로세스에서 실행하고 
- * Surface를 통해 UI를 렌더링하는 컴포넌트
+ * SurfaceControlViewHost를 통해 UI를 렌더링하는 컴포넌트
+ * API 29+ (Android 10+) 에서만 동작
  */
 @Composable
 fun FrontModuleSurface(
@@ -43,7 +44,6 @@ fun FrontModuleSurface(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var frontModuleService by remember { mutableStateOf<IFrontModuleService?>(null) }
     var mainAppService by remember { mutableStateOf<IMainAppService?>(null) }
-    var moduleSurface by remember { mutableStateOf<Surface?>(null) }
     
     // 서비스 연결 관리
     val frontServiceConnection = remember {
@@ -145,77 +145,87 @@ fun FrontModuleSurface(
             }
             
             else -> {
-                // TextureView로 Surface 연결
-                AndroidView(
-                    factory = { context ->
-                        TextureView(context).apply {
-                            surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-                                override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-                                    Log.d(TAG, "TextureView surface available: ${width}x${height}")
+                // API 버전 체크
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    // SurfaceView로 SurfacePackage 연결
+                    AndroidView(
+                        factory = { context ->
+                            SurfaceView(context).apply {
+                                // SurfaceView가 준비되면 SurfacePackage 요청
+                                holder.addCallback(object : android.view.SurfaceHolder.Callback {
+                                    override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                                        Log.d(TAG, "SurfaceView surface created")
+                                    }
                                     
-                                    // FrontModuleService에서 SurfaceTexture를 받아서 직접 연결
-                                    requestModuleSurfaceTexture(
-                                        frontModuleService,
-                                        width,
-                                        height,
-                                        surface  // TextureView의 SurfaceTexture 전달
-                                    )
-                                }
-                                
-                                override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
-                                    Log.d(TAG, "TextureView surface size changed: ${width}x${height}")
-                                    // 필요시 재연결
-                                }
-                                
-                                override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                                    Log.d(TAG, "TextureView surface destroyed")
-                                    moduleSurface?.release()
-                                    moduleSurface = null
-                                    return true
-                                }
-                                
-                                override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-                                    // 업데이트 콜백 (필요시 사용)
-                                }
+                                    override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
+                                        Log.d(TAG, "SurfaceView surface changed: ${width}x${height}")
+                                        
+                                        // 프론트 모듈 서비스에서 SurfacePackage를 받아서 SurfaceView에 연결
+                                        requestModuleSurfacePackage(
+                                            frontModuleService,
+                                            this@apply,
+                                            width,
+                                            height
+                                        )
+                                    }
+                                    
+                                    override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                                        Log.d(TAG, "SurfaceView surface destroyed")
+                                    }
+                                })
                             }
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // API 29 미만에서는 에러 메시지 표시
+                    Text(
+                        text = "SurfaceControlViewHost는 Android 10 (API 29) 이상에서만 지원됩니다",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * 모듈 SurfaceTexture를 요청하여 TextureView에 직접 연결
+ * 프론트 모듈 서비스에서 SurfacePackage를 받아서 SurfaceView에 연결
+ * API 29+ (Android 10+) 에서만 동작
  */
-private fun requestModuleSurfaceTexture(
+private fun requestModuleSurfacePackage(
     frontModuleService: IFrontModuleService?,
+    surfaceView: SurfaceView,
     width: Int, 
-    height: Int,
-    textureViewSurface: SurfaceTexture
+    height: Int
 ) {
     try {
-        Log.d(TAG, "Requesting module surface for TextureView: ${width}x${height}")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Log.e(TAG, "SurfaceControlViewHost requires API 29+")
+            return
+        }
+        
+        Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
         
         frontModuleService?.let { service ->
-            // 서비스에서 생성한 Surface 받기
-            val receivedSurface = service.createModuleSurface(width, height)
-            if (receivedSurface != null) {
-                Log.d(TAG, "Module surface received, now displaying on TextureView")
+            // 서비스에서 SurfaceControlViewHost가 생성한 SurfacePackage 받기
+            val surfacePackage = service.createModuleSurfacePackage(width, height)
+            if (surfacePackage != null) {
+                Log.d(TAG, "Module SurfacePackage received from SurfaceControlViewHost")
                 
-                // 여기서 실제로는 받은 Surface의 내용이 TextureView에 자동으로 표시되어야 함
-                // 현재 구조상 이것이 핵심 문제점
-                Log.d(TAG, "Surface connection established")
+                // SurfacePackage를 SurfaceView에 설정
+                // 이렇게 하면 다른 프로세스의 UI가 이 SurfaceView에 렌더링됨
+                surfaceView.setChildSurfacePackage(surfacePackage)
+                
+                Log.d(TAG, "SurfacePackage successfully attached to SurfaceView")
                 
             } else {
-                Log.w(TAG, "Failed to get module surface")
+                Log.w(TAG, "Failed to get module SurfacePackage from SurfaceControlViewHost")
             }
         } ?: run {
             Log.w(TAG, "FrontModuleService is null")
         }
     } catch (e: Exception) {
-        Log.e(TAG, "Failed to request module surface texture", e)
+        Log.e(TAG, "Failed to request module surface package", e)
     }
 }

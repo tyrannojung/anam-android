@@ -1,7 +1,7 @@
 package com.anam.wallet;
 
 import com.anam.wallet.IMainAppService;
-import android.view.Surface;
+import android.view.SurfaceControlViewHost.SurfacePackage;
 
 /**
  * 프론트 모듈 서비스 인터페이스
@@ -29,10 +29,10 @@ interface IFrontModuleService {
     void setMainAppService(in IMainAppService service);
     
     /**
-     * 프론트 모듈 UI Surface 생성 및 반환
+     * 프론트 모듈 UI SurfacePackage 생성 및 반환
      * @param width Surface 너비
      * @param height Surface 높이
-     * @return Surface 객체
+     * @return SurfacePackage 객체 (API 29+)
      */
-    Surface createModuleSurface(int width, int height);
+    SurfacePackage createModuleSurfacePackage(int width, int height);
 }
