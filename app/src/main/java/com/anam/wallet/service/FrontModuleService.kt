@@ -2,7 +2,6 @@ package com.anam.wallet.service
 
 import android.app.Service
 import android.content.Intent
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -13,7 +12,6 @@ import android.view.Surface
 import com.anam.wallet.IMainAppService
 import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
-import com.anam.wallet.core.FrontModuleContext
 
 private const val TAG = "FrontModuleService"
 
