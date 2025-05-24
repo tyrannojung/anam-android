@@ -4,12 +4,14 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,8 +37,8 @@ fun SimpleHubScreen(
     // 상태 변수
     val uiState by viewModel.uiStateFlow.collectAsState()
     
-    // 고정된 모듈 ID 사용 (요구사항에 따라 모듈 ID 7으로 고정)
-    val moduleId = "7"
+    // 사용자 입력 모듈 ID 상태
+    var moduleIdInput by remember { mutableStateOf("7") }
     
     // 최초 컴포지션 시 모듈 데이터 새로고침
     LaunchedEffect(moduleManager) {
@@ -87,9 +89,13 @@ fun SimpleHubScreen(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     
-                    // 모듈 ID 표시
-                    Text(
-                        text = "모듈 ID: $moduleId",
+                    // 모듈 ID 입력 필드
+                    OutlinedTextField(
+                        value = moduleIdInput,
+                        onValueChange = { moduleIdInput = it },
+                        label = { Text("모듈 인덱스") },
+                        placeholder = { Text("7, 8, 9 등 입력") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
@@ -100,7 +106,7 @@ fun SimpleHubScreen(
                         onClick = {
                             viewModel.clearStatusMessage()
                             coroutineScope.launch {
-                                viewModel.downloadModule(moduleManager, moduleId)
+                                viewModel.downloadModule(moduleManager, moduleIdInput.trim())
                             }
                         },
                         enabled = !uiState.isLoading,
