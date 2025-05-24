@@ -2,6 +2,7 @@ package com.anam.wallet.ui.screens.browser
 
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -34,7 +35,7 @@ import com.anam.wallet.ui.theme.AnamDarkGray
 
 // Companion object to store the last visited URL across recompositions
 private object BrowserStateManager {
-    var lastVisitedUrl = "https://www.google.com"
+    var lastVisitedUrl = "https://app.uniswap.org/"
     var webViewState: Bundle? = null
 }
 
@@ -170,6 +171,18 @@ fun BrowserScreen() {
                                 val state = Bundle()
                                 webView.saveState(state)
                                 BrowserStateManager.webViewState = state
+                            }
+                            
+                            override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
+                                super.onReceivedError(view, errorCode, description, failingUrl)
+                                isLoading = false
+                                // Keep Header and URL bar visible even on error
+                            }
+                            
+                            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                                super.onReceivedError(view, request, error)
+                                isLoading = false
+                                // Keep Header and URL bar visible even on error
                             }
                             
                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
