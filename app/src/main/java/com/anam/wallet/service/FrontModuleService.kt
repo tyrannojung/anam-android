@@ -141,108 +141,80 @@ class FrontModuleService : Service() {
      */
     private fun createComposeUIOnSurface(width: Int, height: Int): Surface? {
         return try {
-            Log.d(TAG, "Creating Compose UI on Surface: ${width}x${height}")
+            Log.d(TAG, "Creating module surface: ${width}x${height}")
             
-            // 메인 스레드에서 UI 생성
-            Handler(Looper.getMainLooper()).post {
-                createAndRenderComposeUI(width, height)
-            }
+            // 애플리케이션 컨텍스트에서 SurfaceView 생성
+            val surfaceView = SurfaceView(this)
+            surfaceView.layoutParams = ViewGroup.LayoutParams(width, height)
+            surfaceView.holder.setFormat(PixelFormat.RGBA_8888)
             
-            // 즉시 Surface 반환 (실제 렌더링은 비동기)
-            createSurfaceForRendering(width, height)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to create Surface", e)
-            null
-        }
-    }
-    
-    /**
-     * 렌더링용 Surface 생성
-     */
-    private fun createSurfaceForRendering(width: Int, height: Int): Surface? {
-        return try {
-            val surfaceView = SurfaceView(this).apply {
-                layoutParams = ViewGroup.LayoutParams(width, height)
-                holder.setFormat(PixelFormat.RGBA_8888)
+            // Surface에 모듈 UI 내용 그리기
+            surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(holder: SurfaceHolder) {
+                    Log.d(TAG, "Module surface created, drawing content")
+                    drawModuleUIOnSurface(holder)
+                }
                 
-                // Surface 콜백 설정
-                holder.addCallback(object : SurfaceHolder.Callback {
-                    override fun surfaceCreated(holder: SurfaceHolder) {
-                        Log.d(TAG, "Rendering Surface created")
-                        // 배경색 설정
-                        val canvas = holder.lockCanvas()
-                        canvas?.let {
-                            it.drawColor(Color.WHITE)
-                            holder.unlockCanvasAndPost(it)
-                        }
-                    }
-                    
-                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-                        Log.d(TAG, "Rendering Surface changed: ${width}x${height}")
-                    }
-                    
-                    override fun surfaceDestroyed(holder: SurfaceHolder) {
-                        Log.d(TAG, "Rendering Surface destroyed")
-                    }
-                })
-            }
+                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+                    Log.d(TAG, "Module surface changed: ${width}x${height}")
+                    drawModuleUIOnSurface(holder)
+                }
+                
+                override fun surfaceDestroyed(holder: SurfaceHolder) {
+                    Log.d(TAG, "Module surface destroyed")
+                }
+            })
             
+            Log.d(TAG, "Module surface created successfully")
             surfaceView.holder.surface
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create rendering surface", e)
+            Log.e(TAG, "Failed to create module surface", e)
             null
         }
     }
     
     /**
-     * 실제 Compose UI 생성 및 렌더링
+     * Surface에 모듈 UI 그리기
      */
-    private fun createAndRenderComposeUI(width: Int, height: Int) {
+    private fun drawModuleUIOnSurface(holder: SurfaceHolder) {
         try {
-            Log.d(TAG, "Creating and rendering Compose UI")
+            Log.d(TAG, "Drawing module UI on surface")
             
-            // 컨테이너 프레임 레이아웃 생성
-            val container = FrameLayout(this).apply {
-                layoutParams = ViewGroup.LayoutParams(width, height)
+            val canvas = holder.lockCanvas()
+            canvas?.let {
+                try {
+                    // 배경색 설정
+                    it.drawColor(Color.LTGRAY)
+                    
+                    // 모듈 UI 테스트 드로잉
+                    val paint = android.graphics.Paint().apply {
+                        color = Color.BLACK
+                        textSize = 60f
+                        isAntiAlias = true
+                    }
+                    
+                    // 모듈 정보 표시
+                    it.drawText("Front Module Loaded!", 100f, 200f, paint)
+                    it.drawText("Module is running in separate process", 100f, 300f, paint)
+                    
+                    // 실제 로드된 모듈 정보 표시
+                    frontModule?.let { module ->
+                        it.drawText("Module Class: ${module.javaClass.simpleName}", 100f, 400f, paint)
+                        it.drawText("Status: Ready", 100f, 500f, paint)
+                    } ?: run {
+                        it.drawText("Status: Module not loaded", 100f, 400f, paint)
+                    }
+                    
+                    Log.d(TAG, "Module UI drawn successfully on surface")
+                    
+                } finally {
+                    holder.unlockCanvasAndPost(it)
+                }
             }
-            
-            // ComposeView 생성 및 설정
-            val composeView = ComposeView(this).apply {
-                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-            
-            // 컨테이너에 ComposeView 추가
-            container.addView(composeView)
-            
-            // Compose 컨텐츠 설정
-            composeView.setContent {
-                frontModule?.FrontModuleScreen(
-                    FrontModuleContext(
-                        moduleId = "current_module",
-                        parameters = emptyMap()
-                    )
-                )
-            }
-            
-            Log.d(TAG, "Compose content set successfully")
-            
-            // 레이아웃 측정 및 배치
-            container.measure(
-                android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
-                android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
-            )
-            container.layout(0, 0, width, height)
-            
-            Log.d(TAG, "Compose UI layout completed")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create and render Compose UI", e)
+            Log.e(TAG, "Failed to draw module UI on surface", e)
         }
     }
 }
