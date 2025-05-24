@@ -33,10 +33,11 @@ interface IFrontModuleService {
     
     /**
      * 프론트 모듈 UI SurfacePackage 생성 및 반환
-     * @param hostToken SurfaceView의 hostToken (터치/키보드 이벤트 전달용)
+     * @param hostToken SurfaceView의 hostToken (Surface 부착용)
+     * @param inputToken SurfaceView의 inputToken (터치/키보드 이벤트 전달용)
      * @param width Surface 너비
      * @param height Surface 높이
      * @return SurfacePackage 객체 (API 29+)
      */
-    SurfacePackage createModuleSurfacePackage(in IBinder hostToken, int width, int height);
+    SurfacePackage createModuleSurfacePackage(in IBinder hostToken, in IBinder inputToken, int width, int height);
 }

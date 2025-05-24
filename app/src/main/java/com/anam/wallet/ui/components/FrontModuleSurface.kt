@@ -151,6 +151,10 @@ fun FrontModuleSurface(
                     AndroidView(
                         factory = { context ->
                             SurfaceView(context).apply {
+                                // 터치 이벤트를 위해 포커스 설정
+                                isFocusableInTouchMode = true
+                                requestFocus()
+                                
                                 // SurfaceView가 준비되면 SurfacePackage 요청
                                 holder.addCallback(object : android.view.SurfaceHolder.Callback {
                                     override fun surfaceCreated(holder: android.view.SurfaceHolder) {
@@ -206,11 +210,17 @@ private fun requestModuleSurfacePackage(
             Log.d(TAG, "Requesting module surface package for SurfaceView: ${width}x${height}")
             
             frontModuleService?.let { service ->
-                // SurfaceView의 hostToken 가져오기 (API 29+)
+                // SurfaceView의 hostToken과 inputToken 가져오기 (API 29+)
                 val hostToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     surfaceView.hostToken
                 } else {
                     null
+                }
+                
+                val inputToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    surfaceView.inputToken  // API 30+에서만 사용 가능
+                } else {
+                    hostToken  // API 29에서는 hostToken 사용
                 }
                 
                 if (hostToken == null) {
@@ -220,8 +230,10 @@ private fun requestModuleSurfacePackage(
                     return@let
                 }
                 
+                Log.d(TAG, "Tokens: hostToken=${if (hostToken != null) "OK" else "NULL"}, inputToken=${if (inputToken != null) "OK" else "NULL"}")
+                
                 // 서비스에서 SurfaceControlViewHost가 생성한 SurfacePackage 받기
-                val surfacePackage = service.createModuleSurfacePackage(hostToken, width, height)
+                val surfacePackage = service.createModuleSurfacePackage(hostToken, inputToken, width, height)
                 if (surfacePackage != null) {
                     Log.d(TAG, "Module SurfacePackage received from SurfaceControlViewHost")
                     

@@ -119,8 +119,8 @@ class FrontModuleService : Service() {
             frontModule?.setMainAppService(service)
         }
         
-        override fun createModuleSurfacePackage(hostToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
-            Log.d(TAG, "Creating module surface package: ${width}x${height} with hostToken")
+        override fun createModuleSurfacePackage(hostToken: android.os.IBinder, inputToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
+            Log.d(TAG, "Creating module surface package: ${width}x${height} with hostToken and inputToken")
             
             return try {
                 if (frontModule == null) {
@@ -133,7 +133,7 @@ class FrontModuleService : Service() {
                 
                 // API 29+ 에서만 SurfaceControlViewHost 사용 가능
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    createSurfaceControlViewHost(hostToken, width, height)
+                    createSurfaceControlViewHost(hostToken, inputToken, width, height)
                 } else {
                     Log.e(TAG, "SurfaceControlViewHost requires API 29+")
                     null
@@ -198,9 +198,10 @@ class FrontModuleService : Service() {
      * SurfaceControlViewHost를 사용하여 실제 Compose UI를 렌더링
      * API 29+ (Android 10+) 에서만 사용 가능
      */
-    private fun createSurfaceControlViewHost(hostToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
+    private fun createSurfaceControlViewHost(hostToken: android.os.IBinder, inputToken: android.os.IBinder, width: Int, height: Int): SurfaceControlViewHost.SurfacePackage? {
         return try {
             Log.d(TAG, "Creating SurfaceControlViewHost: ${width}x${height}")
+            Log.d(TAG, "inputToken: ${if (inputToken != null) "OK" else "NULL"}")
             
             // DisplayManager를 통해 기본 디스플레이 얻기
             val displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -223,8 +224,14 @@ class FrontModuleService : Service() {
             
             Handler(Looper.getMainLooper()).post {
                 try {
-                    // SurfaceControlViewHost 생성
-                    surfaceControlViewHost = SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
+                    // SurfaceControlViewHost 생성 (API별 분기)
+                    surfaceControlViewHost = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        // API 30+ (Android 11+): 4-파라미터 (hostToken, inputToken)
+                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken, inputToken)
+                    } else {
+                        // API 29 (Android 10): 3-파라미터 (hostToken만)
+                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
+                    }
                     
                     // LifecycleOwner 생성 및 시작
                     hostLifecycleOwner = HostLifecycleOwner().apply {
@@ -250,15 +257,20 @@ class FrontModuleService : Service() {
                     
                     // FrameLayout root 생성 및 ViewTree 설정
                     val root = FrameLayout(windowContext).apply {
+                        // 1) ViewTree 주입 (addView 전에 먼저 설정)
+                        setViewTreeLifecycleOwner(hostLifecycleOwner!!)
+                        setViewTreeSavedStateRegistryOwner(hostLifecycleOwner!!)
+                        setViewTreeViewModelStoreOwner(hostLifecycleOwner!!)
+                        
+                        // 2) ComposeView 추가 (ViewTree 설정 후)
                         addView(composeView, FrameLayout.LayoutParams(
                             FrameLayout.LayoutParams.MATCH_PARENT,
                             FrameLayout.LayoutParams.MATCH_PARENT
                         ))
                         
-                        // ViewTree 주입 - WindowRecomposer가 View Tree에서 찾을 수 있도록
-                        setViewTreeLifecycleOwner(hostLifecycleOwner!!)
-                        setViewTreeSavedStateRegistryOwner(hostLifecycleOwner!!)
-                        setViewTreeViewModelStoreOwner(hostLifecycleOwner!!)
+                        // 3) 포커스 설정
+                        isFocusableInTouchMode = true
+                        requestFocus()
                     }
                     
                     // root를 SurfaceControlViewHost에 설정 - 메인 스레드에서
