@@ -12,16 +12,55 @@ import android.util.Log
 import android.view.Display
 import android.view.SurfaceControlViewHost
 import android.view.WindowManager
+import android.widget.FrameLayout
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import com.anam.wallet.IMainAppService
 import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
 import com.anam.wallet.core.FrontModuleContext
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 private const val TAG = "FrontModuleService"
+
+/**
+ * SurfaceControlViewHost용 LifecycleOwner 구현
+ * Service 컨텍스트에서는 자동으로 제공되지 않으므로 수동 생성
+ */
+class HostLifecycleOwner : LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val store = ViewModelStore()
+    
+    override val lifecycle: Lifecycle = lifecycleRegistry
+    override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
+    override val viewModelStore: ViewModelStore = store
+    
+    fun moveTo(state: Lifecycle.State) {
+        if (state == Lifecycle.State.CREATED) {
+            savedStateRegistryController.performRestore(null)
+        }
+        lifecycleRegistry.currentState = state
+    }
+    
+    fun destroy() {
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        store.clear()
+    }
+}
 
 /**
  * 별도 프로세스(:front_module_process)에서 실행되는 서비스
@@ -32,10 +71,13 @@ class FrontModuleService : Service() {
     private var frontModule: IFrontModuleUI? = null
     private lateinit var mainAppService: IMainAppService
     private var surfaceControlViewHost: SurfaceControlViewHost? = null
+    private var hostLifecycleOwner: HostLifecycleOwner? = null
     
     /** 중복 Host 정리용 헬퍼 - Surface 누수 방지 */
     private fun disposeHost() {
+        hostLifecycleOwner?.destroy()
         surfaceControlViewHost?.release()
+        hostLifecycleOwner = null
         surfaceControlViewHost = null
     }
     
@@ -116,13 +158,8 @@ class FrontModuleService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "FrontModuleService destroyed")
+        disposeHost()          // 한 줄로 정리
         frontModule?.onModuleDestroy()
-        
-        // SurfaceControlViewHost 정리
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            surfaceControlViewHost?.release()
-            surfaceControlViewHost = null
-        }
     }
     
     private fun loadModuleFromApk(apkPath: String, className: String): Any {
@@ -201,6 +238,12 @@ class FrontModuleService : Service() {
                         SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
                     }
                     
+                    // LifecycleOwner 생성 및 시작
+                    hostLifecycleOwner = HostLifecycleOwner().apply {
+                        moveTo(Lifecycle.State.CREATED)   // performRestore()
+                        moveTo(Lifecycle.State.STARTED)
+                    }
+                    
                     // ComposeView 생성 - 메인 스레드에서
                     val composeView = ComposeView(windowContext).apply {
                         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -216,25 +259,42 @@ class FrontModuleService : Service() {
                         }
                     }
                     
-                    // ComposeView를 SurfaceControlViewHost에 설정 - 메인 스레드에서
-                    surfaceControlViewHost!!.setView(composeView, width, height)
+                    // FrameLayout root 생성 및 ViewTree 설정
+                    val root = FrameLayout(windowContext).apply {
+                        addView(composeView, FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT
+                        ))
+                        
+                        // ViewTree 주입 - WindowRecomposer가 View Tree에서 찾을 수 있도록
+                        setViewTreeLifecycleOwner(hostLifecycleOwner!!)
+                        setViewTreeSavedStateRegistryOwner(hostLifecycleOwner!!)
+                        setViewTreeViewModelStoreOwner(hostLifecycleOwner!!)
+                    }
+                    
+                    // root를 SurfaceControlViewHost에 설정 - 메인 스레드에서
+                    surfaceControlViewHost!!.setView(root, width, height)
                     
                     // SurfacePackage 반환
                     val surfacePackage = surfaceControlViewHost!!.surfacePackage
-                    Log.d(TAG, "SurfaceControlViewHost created successfully with SurfacePackage on main thread")
+                    Log.d(TAG, "SurfaceControlViewHost created successfully with LifecycleOwner")
                     
                     resultRef.set(surfacePackage)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to create SurfaceControlViewHost on main thread", e)
+                    Log.e(TAG, "Failed to create SurfaceControlViewHost with LifecycleOwner", e)
                     resultRef.set(null)
                 } finally {
                     latch.countDown()
                 }
             }
             
-            // 메인 스레드 작업 완료까지 대기
-            latch.await()
-            return resultRef.get()
+            // 메인 스레드 작업 완료까지 대기 (3초 타임아웃)
+            if (latch.await(3, TimeUnit.SECONDS)) {
+                return resultRef.get()
+            } else {
+                Log.e(TAG, "SurfaceControlViewHost creation timed out")
+                return null
+            }
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create SurfaceControlViewHost", e)
