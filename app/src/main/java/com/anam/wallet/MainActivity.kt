@@ -88,16 +88,14 @@ fun WalletApp() {
                 }
             },
             bottomBar = {
-                // Don't show bottom navigation for Detail screen
-                if (currentScreen != "Detail") {
-                    BottomNavBar(
-                        navController = navController,
-                        currentScreen = currentScreen,
-                        onScreenSelected = { screen ->
-                            currentScreen = screen
-                        }
-                    )
-                }
+                // Always show bottom navigation (including Detail screen)
+                BottomNavBar(
+                    navController = navController,
+                    currentScreen = currentScreen,
+                    onScreenSelected = { screen ->
+                        currentScreen = screen
+                    }
+                )
             }
         ) { innerPadding ->
             NavHost(
