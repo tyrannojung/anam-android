@@ -226,10 +226,45 @@ class FrontModuleService : Service() {
                 try {
                     // SurfaceControlViewHost 생성 (API별 분기)
                     surfaceControlViewHost = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        // API 30+ (Android 11+): 4-파라미터 (hostToken, inputToken)
-                        SurfaceControlViewHost(windowContext, defaultDisplay, hostToken, inputToken)
+                        try {
+                            // API 30+: 리플렉션으로 4-파라미터 생성자 호출
+                            Log.d(TAG, "Attempting 4-parameter SCVH constructor with InputTransferToken")
+                            Log.d(TAG, "inputToken null check: ${if (inputToken != null) "OK" else "NULL"}")
+                            
+                            // 1) InputTransferToken 클래스 가져오기
+                            val ittClazz = Class.forName("android.view.InputTransferToken")
+                            
+                            // 2) IBinder → InputTransferToken 변환
+                            val itt = ittClazz
+                                .getConstructor(IBinder::class.java)       // public InputTransferToken(IBinder token)
+                                .newInstance(inputToken)                   // ← 여기서 wrap
+                            
+                            Log.d(TAG, "InputTransferToken created successfully")
+                            
+                            // 3) 4-파라미터 생성자 호출
+                            val constructor = SurfaceControlViewHost::class.java.getConstructor(
+                                Context::class.java,
+                                Display::class.java,
+                                IBinder::class.java,
+                                ittClazz                                    // 정확한 타입!
+                            )
+                            val result = constructor.newInstance(
+                                windowContext,
+                                defaultDisplay,
+                                hostToken,
+                                itt                                         // **InputTransferToken 객체**
+                            ) as SurfaceControlViewHost
+                            
+                            Log.d(TAG, "4-parameter SCVH constructor SUCCESS with InputTransferToken! 🎯")
+                            result
+                        } catch (e: Exception) {
+                            // 4-파라미터 실패시 3-파라미터 fallback
+                            Log.w(TAG, "4-parameter constructor failed, using 3-parameter fallback: ${e.message}")
+                            SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
+                        }
                     } else {
-                        // API 29 (Android 10): 3-파라미터 (hostToken만)
+                        // API 29: 3-파라미터만 지원
+                        Log.d(TAG, "Using 3-parameter SCVH constructor (API 29)")
                         SurfaceControlViewHost(windowContext, defaultDisplay, hostToken)
                     }
                     

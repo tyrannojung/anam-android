@@ -218,7 +218,12 @@ private fun requestModuleSurfacePackage(
                 }
                 
                 val inputToken = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    surfaceView.inputToken  // API 30+에서만 사용 가능
+                    try {
+                        // API 30+에서만 inputToken 프로퍼티 사용 가능
+                        surfaceView.javaClass.getMethod("getInputToken").invoke(surfaceView) as? android.os.IBinder
+                    } catch (e: Exception) {
+                        hostToken  // fallback
+                    }
                 } else {
                     hostToken  // API 29에서는 hostToken 사용
                 }
