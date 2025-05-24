@@ -3,9 +3,8 @@ package com.anam.wallet.service
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.media.ImageReader
+import android.graphics.SurfaceTexture
 import android.os.IBinder
 import android.util.Log
 import android.view.Surface
@@ -23,6 +22,7 @@ class FrontModuleService : Service() {
     
     private var frontModule: IFrontModuleUI? = null
     private lateinit var mainAppService: IMainAppService
+    private var surfaceTexture: SurfaceTexture? = null
     
     private val binder = object : IFrontModuleService.Stub() {
         override fun loadModule(apkPath: String, className: String, moduleId: String) {
@@ -94,6 +94,10 @@ class FrontModuleService : Service() {
         super.onDestroy()
         Log.d(TAG, "FrontModuleService destroyed")
         frontModule?.onModuleDestroy()
+        
+        // SurfaceTexture 정리
+        surfaceTexture?.release()
+        surfaceTexture = null
     }
     
     private fun loadModuleFromApk(apkPath: String, className: String): Any {
@@ -129,24 +133,26 @@ class FrontModuleService : Service() {
     }
     
     /**
-     * ImageReader를 사용하여 Window에 의존하지 않는 Surface 생성
+     * SurfaceTexture를 사용하여 Producer Surface 생성
      */
     private fun createComposeUIOnSurface(width: Int, height: Int): Surface? {
         return try {
-            Log.d(TAG, "Creating module surface with ImageReader: ${width}x${height}")
+            Log.d(TAG, "Creating producer surface with SurfaceTexture: ${width}x${height}")
             
-            // ImageReader로 Window-less Surface 생성
-            val imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 1)
-            val surface = imageReader.surface
+            // SurfaceTexture로 Producer Surface 생성
+            surfaceTexture = SurfaceTexture(0).apply {
+                setDefaultBufferSize(width, height)
+            }
+            val surface = Surface(surfaceTexture!!)
             
             // Surface에 직접 그리기
             drawModuleUIOnSurface(surface, width, height)
             
-            Log.d(TAG, "Module surface created and drawn successfully")
+            Log.d(TAG, "Producer surface created and drawn successfully")
             surface
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create module surface", e)
+            Log.e(TAG, "Failed to create producer surface", e)
             null
         }
     }
