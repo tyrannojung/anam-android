@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import com.anam.wallet.IMainAppService
+import com.anam.wallet.IFrontModuleService
 import com.anam.wallet.core.IFrontModuleUI
 import com.anam.wallet.core.FrontModuleContext
 

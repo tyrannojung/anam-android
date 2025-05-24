@@ -3,16 +3,13 @@ package com.anam.wallet.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.anam.wallet.SimpleModuleManager
-import com.anam.wallet.model.AccountInfo
-import com.anam.wallet.model.ModuleInfo
-import com.anam.wallet.model.NetworkInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * 간소화된 모듈 뷰모델
- * SimpleModuleManager와 함께 사용
+ * Front Module 시스템을 위한 간소화된 모듈 뷰모델
+ * 모듈 다운로드와 기본 상태 관리에 집중
  */
 abstract class SimpleModuleViewModel<T : SimpleModuleState> : ViewModel() {
 
@@ -35,12 +32,11 @@ abstract class SimpleModuleViewModel<T : SimpleModuleState> : ViewModel() {
         progress: Int = baseState.progress,
         message: String = baseState.message,
         isSuccess: Boolean = baseState.isSuccess,
-        moduleData: Map<String, SimpleModuleData> = baseState.moduleData,
-        testResult: Map<String, String> = baseState.testResult
+        downloadedModules: Set<String> = baseState.downloadedModules
     ): T
     
     /**
-     * 모듈 다운로드 및 로드
+     * 모듈 다운로드
      */
     suspend fun downloadModule(moduleManager: SimpleModuleManager, moduleId: String) {
         try {
@@ -55,7 +51,7 @@ abstract class SimpleModuleViewModel<T : SimpleModuleState> : ViewModel() {
                 )
             }
             
-            // 모듈 다운로드 및 로드
+            // 모듈 다운로드
             moduleManager.downloadAndLoadModule(
                 moduleId = moduleId,
                 onProgress = { progress ->
@@ -73,22 +69,13 @@ abstract class SimpleModuleViewModel<T : SimpleModuleState> : ViewModel() {
                             baseState = state,
                             isLoading = false,
                             message = message,
-                            isSuccess = success
+                            isSuccess = success,
+                            downloadedModules = if (success) {
+                                state.downloadedModules + moduleId
+                            } else {
+                                state.downloadedModules
+                            }
                         )
-                    }
-                    
-                    // 성공 시 모듈 데이터 새로고침 및 테스트 결과 추가
-                    if (success) {
-                        refreshModuleData(moduleManager)
-                        
-                        // 모듈 테스트 결과 가져오기
-                        val testResult = moduleManager.getModuleSummary(moduleId)
-                        updateState { state ->
-                            createModifiedState(
-                                baseState = state,
-                                testResult = testResult
-                            )
-                        }
                     }
                 }
             )
@@ -132,70 +119,44 @@ abstract class SimpleModuleViewModel<T : SimpleModuleState> : ViewModel() {
     }
     
     /**
-     * 모듈 데이터 새로고침
+     * 다운로드된 모듈 목록 새로고침
      */
-    fun refreshModuleData(moduleManager: SimpleModuleManager) {
-        val moduleData = mutableMapOf<String, SimpleModuleData>()
-        
-        moduleManager.getLoadedModuleIds().forEach { moduleId ->
-            try {
-                val moduleInfo = moduleManager.getModuleInfo(moduleId)
-                if (moduleInfo != null) {
-                    val accounts = moduleManager.getModuleAccounts(moduleId)
-                    val networkInfo = moduleManager.getNetworkInfo(moduleId)
-                    
-                    moduleData[moduleId] = SimpleModuleData(
-                        moduleInfo = moduleInfo,
-                        accounts = accounts ?: emptyList(),
-                        networkInfo = networkInfo
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "모듈 데이터 새로고침 중 오류: $moduleId", e)
-            }
-        }
-        
+    fun refreshDownloadedModules(moduleManager: SimpleModuleManager) {
         updateState { state ->
             createModifiedState(
                 baseState = state,
-                moduleData = moduleData
+                downloadedModules = moduleManager.getDownloadedModuleIds()
             )
         }
     }
     
     /**
-     * 모듈 언로드
+     * 모듈 삭제
      */
-    fun unloadModule(moduleManager: SimpleModuleManager, moduleId: String) {
+    fun deleteModule(moduleManager: SimpleModuleManager, moduleId: String) {
         try {
-            val success = moduleManager.unloadModule(moduleId)
+            val success = moduleManager.deleteModule(moduleId)
             
             if (success) {
-                // UI 상태에서 모듈 데이터 제거
-                val updatedModuleData = uiState.moduleData.toMutableMap().apply {
-                    remove(moduleId)
-                }
-                
                 updateState { state ->
                     createModifiedState(
                         baseState = state,
-                        message = "모듈 언로드 성공",
+                        message = "모듈 삭제 성공",
                         isSuccess = true,
-                        moduleData = updatedModuleData,
-                        testResult = emptyMap()
+                        downloadedModules = state.downloadedModules - moduleId
                     )
                 }
             } else {
                 updateState { state ->
                     createModifiedState(
                         baseState = state,
-                        message = "모듈 언로드 실패",
+                        message = "모듈 삭제 실패",
                         isSuccess = false
                     )
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "모듈 언로드 중 오류: $moduleId", e)
+            Log.e(TAG, "모듈 삭제 중 오류: $moduleId", e)
             updateState { state ->
                 createModifiedState(
                     baseState = state,
@@ -212,22 +173,12 @@ abstract class SimpleModuleViewModel<T : SimpleModuleState> : ViewModel() {
 }
 
 /**
- * 모듈 UI 상태 인터페이스
+ * Front Module 시스템을 위한 간소화된 UI 상태
  */
 interface SimpleModuleState {
     val isLoading: Boolean
     val progress: Int
     val message: String
     val isSuccess: Boolean
-    val moduleData: Map<String, SimpleModuleData>
-    val testResult: Map<String, String>
+    val downloadedModules: Set<String>
 }
-
-/**
- * 모듈 데이터 클래스
- */
-data class SimpleModuleData(
-    val moduleInfo: ModuleInfo,
-    val accounts: List<AccountInfo>,
-    val networkInfo: NetworkInfo?
-)

@@ -1,6 +1,5 @@
 package com.anam.wallet.ui.screens.hub
 
-import com.anam.wallet.ui.viewmodel.SimpleModuleData
 import com.anam.wallet.ui.viewmodel.SimpleModuleState
 import com.anam.wallet.ui.viewmodel.SimpleModuleViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * 단순화된 Hub 화면 ViewModel
+ * Front Module용 단순화된 Hub 화면 ViewModel
  */
 class SimpleHubViewModel : SimpleModuleViewModel<SimpleHubUiState>() {
 
@@ -35,16 +34,14 @@ class SimpleHubViewModel : SimpleModuleViewModel<SimpleHubUiState>() {
         progress: Int,
         message: String,
         isSuccess: Boolean,
-        moduleData: Map<String, SimpleModuleData>,
-        testResult: Map<String, String>
+        downloadedModules: Set<String>
     ): SimpleHubUiState {
         return baseState.copy(
             isLoading = isLoading,
             progress = progress,
             message = message,
             isSuccess = isSuccess,
-            moduleData = moduleData,
-            testResult = testResult
+            downloadedModules = downloadedModules
         )
     }
 }
@@ -57,6 +54,5 @@ data class SimpleHubUiState(
     override val progress: Int = 0,
     override val message: String = "",
     override val isSuccess: Boolean = true,
-    override val moduleData: Map<String, SimpleModuleData> = emptyMap(),
-    override val testResult: Map<String, String> = emptyMap()
+    override val downloadedModules: Set<String> = emptySet()
 ) : SimpleModuleState

@@ -40,10 +40,10 @@ fun SimpleHubScreen(
     // 사용자 입력 모듈 ID 상태
     var moduleIdInput by remember { mutableStateOf("7") }
     
-    // 최초 컴포지션 시 모듈 데이터 새로고침
+    // 최초 컴포지션 시 다운로드된 모듈 목록 새로고침
     LaunchedEffect(moduleManager) {
-        Log.d(TAG, "LaunchedEffect: refreshing module data")
-        viewModel.refreshModuleData(moduleManager)
+        Log.d(TAG, "LaunchedEffect: refreshing downloaded modules")
+        viewModel.refreshDownloadedModules(moduleManager)
     }
     
     Box(
@@ -156,10 +156,10 @@ fun SimpleHubScreen(
                 }
             }
             
-            // 모듈 정보 표시
-            if (uiState.moduleData.isNotEmpty()) {
+            // 다운로드된 모듈 목록 표시
+            if (uiState.downloadedModules.isNotEmpty()) {
                 Text(
-                    text = "설치된 프론트 모듈",
+                    text = "다운로드된 프론트 모듈",
                     fontSize = 20.sp,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
@@ -168,7 +168,7 @@ fun SimpleHubScreen(
                     textAlign = TextAlign.Start
                 )
                 
-                uiState.moduleData.forEach { (currentModuleId, moduleData) ->
+                uiState.downloadedModules.forEach { moduleId ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -183,55 +183,46 @@ fun SimpleHubScreen(
                         ) {
                             // 모듈 기본 정보
                             Text(
-                                text = moduleData.moduleInfo.name,
+                                text = "Front Module $moduleId",
                                 fontSize = 18.sp,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             
                             Text(
-                                text = "버전: ${moduleData.moduleInfo.version}",
+                                text = "모듈 ID: $moduleId",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                             
-                            // 네트워크 정보
-                            if (moduleData.networkInfo != null) {
-                                Text(
-                                    text = "네트워크: ${moduleData.networkInfo.name}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                            
-                            // 계정 정보
                             Text(
-                                text = "계정 수: ${moduleData.accounts.size}",
+                                text = "상태: 다운로드 완료",
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                             
-                            // 버튼 영역 (언로드 + 상세 보기)
+                            // 버튼 영역 (삭제 + 상세 보기)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // 언로드 버튼
+                                // 삭제 버튼
                                 OutlinedButton(
                                     onClick = {
-                                        viewModel.unloadModule(moduleManager, currentModuleId)
+                                        viewModel.deleteModule(moduleManager, moduleId)
                                     },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("모듈 언로드")
+                                    Text("모듈 삭제")
                                 }
                                 
                                 // 상세 보기 버튼
                                 Button(
                                     onClick = {
                                         // 모듈 상세 화면으로 이동
-                                        navController.navigate("moduleDetail/$currentModuleId")
+                                        navController.navigate("moduleDetail/$moduleId")
                                     },
                                     modifier = Modifier.weight(1f)
                                 ) {
