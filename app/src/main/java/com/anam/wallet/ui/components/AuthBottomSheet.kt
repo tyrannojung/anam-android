@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,8 +22,13 @@ fun AuthBottomSheet(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true  // 반만 확장된 상태 건너뛰기
+    )
+    
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         containerColor = MaterialTheme.colorScheme.surface
     ) {
