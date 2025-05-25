@@ -59,14 +59,14 @@ class DIDService(private val context: Context) {
     }
     
     /**
-     * Issue driver license
+     * Issue driver license (License DID + VC in one call)
      */
     suspend fun issueDriverLicense(licenseNumber: String = "A-123-456-7890"): Result<VerifiableCredential> {
         return try {
             val walletInfo = walletManager.getWalletInfo()
                 ?: return Result.failure(Exception("Wallet not initialized"))
             
-            // 1. Create license DID
+            // Create license DID and get VC in one call
             val licenseRequest = LicenseRequest(
                 userDid = walletInfo.userDid,
                 licenseNumber = licenseNumber
@@ -78,18 +78,9 @@ class DIDService(private val context: Context) {
             }
             
             val license = licenseResponse.body()!!
+            val vc = license.vc
             
-            // 2. Issue VC
-            val vcRequest = VCIssueRequest(licenseDid = license.licenseDid)
-            val vcResponse = apiService.issueVC(vcRequest)
-            
-            if (!vcResponse.isSuccessful) {
-                return Result.failure(Exception("VC issuance failed: ${vcResponse.message()}"))
-            }
-            
-            val vc = vcResponse.body()!!
-            
-            // 3. Save VC locally
+            // Save VC locally
             vcManager.saveVC(vc)
             
             Result.success(vc)

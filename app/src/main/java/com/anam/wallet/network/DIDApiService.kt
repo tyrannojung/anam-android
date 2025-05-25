@@ -19,11 +19,6 @@ interface DIDApiService {
         @Body request: LicenseRequest
     ): Response<LicenseResponse>
     
-    @POST("vcs/issue")
-    suspend fun issueVC(
-        @Body request: VCIssueRequest
-    ): Response<VerifiableCredential>
-    
     @POST("vps/verify")
     suspend fun verifyVP(
         @Body request: VPVerifyRequest
@@ -33,4 +28,9 @@ interface DIDApiService {
     suspend fun getDID(
         @Path("did") did: String
     ): Response<Map<String, Any>>
+    
+    @GET("vcs/{vcId}")
+    suspend fun getVC(
+        @Path("vcId") vcId: String
+    ): Response<VerifiableCredential>
 }

@@ -6,8 +6,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 object ApiClient {
     
     // Change this to your server URL
-    private const val BASE_URL = "http://10.0.2.2:8080/" // For Android Emulator
-    // private const val BASE_URL = "http://YOUR_SERVER_IP:8080/" // For real device
+    private const val BASE_URL = "http://10.0.2.2:8081/" // For Android Emulator (did-gov-gateway)
+    // private const val BASE_URL = "http://YOUR_SERVER_IP:8081/" // For real device
     
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()

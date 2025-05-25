@@ -19,12 +19,11 @@ data class LicenseRequest(
 )
 
 data class LicenseResponse(
-    @SerializedName("licenseId") val licenseId: String,
     @SerializedName("licenseDid") val licenseDid: String,
+    @SerializedName("vc") val vc: VerifiableCredential,
+    @SerializedName("storedAt") val storedAt: String? = null,
     @SerializedName("userDid") val userDid: String,
-    @SerializedName("licenseNumber") val licenseNumber: String,
-    @SerializedName("issuerDid") val issuerDid: String,
-    @SerializedName("message") val message: String
+    @SerializedName("licenseNumber") val licenseNumber: String
 )
 
 data class VCIssueRequest(

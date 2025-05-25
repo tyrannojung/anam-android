@@ -80,15 +80,6 @@ fun IdentityScreen() {
                         issuer = vc.issuer.name,
                         issuanceDate = vc.issuanceDate.substringBefore("T")
                     )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // VP Creation section
-                    VPCreationCard(
-                        onCreateVP = { viewModel.createVP() },
-                        vp = uiState.verifiablePresentation,
-                        isLoading = uiState.isCreatingVP
-                    )
                 }
             }
         }
@@ -241,72 +232,3 @@ private fun LicenseIssuanceCard(
     }
 }
 
-@Composable
-private fun VPCreationCard(
-    onCreateVP: () -> Unit,
-    vp: com.anam.wallet.model.VerifiablePresentation?,
-    isLoading: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "신분증 제시",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "검증 가능한 신분증명서(VP)를 생성합니다",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onCreateVP,
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Text("VP 생성")
-            }
-            
-            vp?.let {
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        Text(
-                            text = "✓ VP 생성 완료",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Challenge: ${it.proof?.challenge?.take(16)}...",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
