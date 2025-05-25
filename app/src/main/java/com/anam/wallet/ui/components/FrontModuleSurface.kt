@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.anam.wallet.core.IFrontModuleUI
 import com.anam.wallet.core.FrontModuleContext
 import com.anam.wallet.service.SimpleMainAppService
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -35,6 +36,11 @@ fun FrontModuleSurface(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
+    // 인증 팝업 상태
+    var showAuthSheet by remember { mutableStateOf(false) }
+    var authRequesterName by remember { mutableStateOf("") }
+    var authCallback by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
+    
     // 백그라운드에서 모듈 로드
     LaunchedEffect(moduleId) {
         try {
@@ -46,7 +52,13 @@ fun FrontModuleSurface(
             
             if (loadedModule is IFrontModuleUI) {
                 // SimpleMainAppService 인스턴스 생성 및 설정
-                val mainAppService = SimpleMainAppService()
+                val mainAppService = SimpleMainAppService(context).apply {
+                    onAuthRequest = { requesterName, callback ->
+                        authRequesterName = requesterName
+                        authCallback = callback
+                        showAuthSheet = true
+                    }
+                }
                 loadedModule.setMainAppService(mainAppService)
                 loadedModule.onModuleStart()
                 
@@ -111,6 +123,21 @@ fun FrontModuleSurface(
                 )
             }
         }
+    }
+    
+    // 인증 팝업 표시
+    if (showAuthSheet) {
+        AuthBottomSheet(
+            requesterName = authRequesterName,
+            onConfirm = {
+                authCallback?.complete(true)
+                showAuthSheet = false
+            },
+            onDismiss = {
+                authCallback?.complete(false)
+                showAuthSheet = false
+            }
+        )
     }
 }
 
