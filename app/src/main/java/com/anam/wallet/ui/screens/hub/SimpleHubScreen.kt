@@ -38,7 +38,7 @@ fun SimpleHubScreen(
     val uiState by viewModel.uiStateFlow.collectAsState()
     
     // 사용자 입력 모듈 ID 상태
-    var moduleIdInput by remember { mutableStateOf("7") }
+    var moduleIdInput by remember { mutableStateOf("") }
     
     // 최초 컴포지션 시 다운로드된 모듈 목록 새로고침
     LaunchedEffect(moduleManager) {
@@ -104,12 +104,16 @@ fun SimpleHubScreen(
                     // 다운로드 버튼
                     Button(
                         onClick = {
-                            viewModel.clearStatusMessage()
-                            coroutineScope.launch {
-                                viewModel.downloadModule(moduleManager, moduleIdInput.trim())
+                            if (moduleIdInput.trim().isNotEmpty()) {
+                                viewModel.clearStatusMessage()
+                                coroutineScope.launch {
+                                    viewModel.downloadModule(moduleManager, moduleIdInput.trim())
+                                }
+                            } else {
+                                viewModel.updateMessage("모듈 ID를 입력해주세요", false)
                             }
                         },
-                        enabled = !uiState.isLoading,
+                        enabled = !uiState.isLoading && moduleIdInput.trim().isNotEmpty(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         if (uiState.isLoading) {

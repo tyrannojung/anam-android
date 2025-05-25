@@ -3,8 +3,8 @@ package com.anam.wallet.core
 import androidx.compose.runtime.Composable
 
 /**
- * 별도 프로세스에서 실행되는 Front Module의 UI 인터페이스
- * Surface를 통해 메인앱에 렌더링됨
+ * Front Module의 UI 인터페이스
+ * 메인앱에서 직접 렌더링됨
  */
 interface IFrontModuleUI {
     
@@ -42,23 +42,5 @@ interface IFrontModuleUI {
  */
 data class FrontModuleContext(
     val moduleId: String,
-    val parameters: Map<String, Any> = emptyMap(),
-    val surfaceCallback: SurfaceCallback? = null,
-    val navigationCallback: NavigationCallback? = null
+    val parameters: Map<String, Any> = emptyMap()
 )
-
-/**
- * Surface 관련 콜백
- */
-interface SurfaceCallback {
-    fun requestSurfaceResize(width: Int, height: Int)
-    fun requestFullscreen(enable: Boolean)
-}
-
-/**
- * 네비게이션 관련 콜백
- */
-interface NavigationCallback {
-    fun requestNavigation(destination: String)
-    fun requestClose()
-}

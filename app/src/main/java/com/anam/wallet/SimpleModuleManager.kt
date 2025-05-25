@@ -78,7 +78,7 @@ class SimpleModuleManager(internal var context: Context?) {
      * @param onComplete 완료 콜백 (성공 여부, 메시지)
      */
     suspend fun downloadAndLoadModule(
-        moduleId: String = "7",
+        moduleId: String,
         onProgress: (Int) -> Unit,
         onComplete: (Boolean, String) -> Unit
     ) = withContext(Dispatchers.IO) {
