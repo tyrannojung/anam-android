@@ -34,8 +34,8 @@ class VPManager(
             
             // 2. Create canonical JSON for signing
             val vpForSigning = JSONObject().apply {
-                put("@context", vp.context)
-                put("type", vp.type)
+                put("@context", org.json.JSONArray(vp.context))
+                put("type", org.json.JSONArray(vp.type))
                 put("holder", vp.holder)
                 put("verifiableCredential", JSONObject(gson.toJson(vp.verifiableCredential)))
             }
