@@ -24,12 +24,18 @@ fun AuthBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
+        // 윈도우 인셋 처리로 시스템 UI와 겹치지 않게
+        windowInsets = WindowInsets(0)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 32.dp)
+                // 네비게이션 바 높이만큼 추가 패딩
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 아이콘
@@ -122,8 +128,6 @@ fun AuthBottomSheet(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
