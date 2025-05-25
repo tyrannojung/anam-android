@@ -24,9 +24,7 @@ fun AuthBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        // 윈도우 인셋 처리로 시스템 UI와 겹치지 않게
-        windowInsets = WindowInsets(0)
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
