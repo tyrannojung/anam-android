@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.anam.wallet.core.IMainApp
 import com.anam.wallet.model.VerifiablePresentation
+import com.anam.wallet.storage.VCManager
+import com.anam.wallet.storage.WalletManager
 import com.google.gson.Gson
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.MainScope
@@ -35,6 +37,22 @@ class SimpleMainAppService(private val context: Context) : IMainApp {
         Log.d(TAG, "Requester: $requesterName")
         
         return try {
+            // 0. 지갑 초기화 및 VC 확인
+            val walletManager = WalletManager(context)
+            val vcManager = VCManager(context)
+            
+            val walletInfo = walletManager.getWalletInfo()
+            if (walletInfo == null) {
+                Log.e(TAG, "Wallet not initialized")
+                return null
+            }
+            
+            val vc = vcManager.getVC()
+            if (vc == null) {
+                Log.e(TAG, "No VC found")
+                return null
+            }
+            
             // 1. 사용자 인증 팝업 표시
             val userApproved = CompletableDeferred<Boolean>()
             
