@@ -1,5 +1,6 @@
 package com.anam.wallet.crypto
 
+import android.util.Log
 import com.anam.wallet.model.*
 import com.google.gson.Gson
 import org.json.JSONObject
@@ -40,6 +41,7 @@ class VPManager(
             }
             
             val canonicalJson = vpForSigning.toString()
+            Log.d("VPManager", "Canonical JSON for signing: $canonicalJson")
             
             // 3. Sign with Android Keystore
             val signature = secureKeyManager.signData(
