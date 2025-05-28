@@ -28,7 +28,7 @@ fun Header(title: String? = null, showLogo: Boolean = true) {
             Image(
                 painter = painterResource(id = R.drawable.img_logo),
                 contentDescription = "Anam Logo",
-                modifier = Modifier.height(24.dp)
+                modifier = Modifier.height(26.dp)
             )
         }
         
