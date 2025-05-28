@@ -118,7 +118,7 @@ fun BrowserScreen() {
                 )
             }
             
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(20.dp))
             
             // Bookmark button
             Image(
@@ -134,6 +134,9 @@ fun BrowserScreen() {
                     }
             )
         }
+        
+        // Add spacing between search bar and WebView
+        Spacer(modifier = Modifier.height(10.dp))
         
         // WebView with loading indicator
         Box(
