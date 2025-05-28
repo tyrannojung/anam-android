@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -35,7 +36,6 @@ import com.anam.wallet.ui.theme.AnamDarkGray
 // Companion object to store the last visited URL across recompositions
 private object BrowserStateManager {
     var lastVisitedUrl = "https://app.uniswap.org/"
-    var webViewState: Bundle? = null
 }
 
 @Composable
@@ -58,10 +58,6 @@ fun BrowserScreen() {
                 // Database storage is enabled by default in modern WebView versions
             }
             
-            // Restore state if available
-            BrowserStateManager.webViewState?.let { state ->
-                restoreState(state)
-            }
         }
     }
     
@@ -144,18 +140,18 @@ fun BrowserScreen() {
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .clip(RectangleShape) // Ensure WebView stays within bounds
         ) {
             AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { 
-                    // Set up WebView client before returning the WebView
+                modifier = Modifier
+                    .fillMaxSize(),
+                factory = { _ ->
                     webView.apply {
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(view: WebView?, urlString: String?, favicon: Bitmap?) {
                                 super.onPageStarted(view, urlString, favicon)
                                 isLoading = true
                                 
-                                // Only update URL if we're not in editing mode and it's not about:blank
                                 if (!isEditing && urlString != null && urlString != "about:blank") {
                                     url = urlString
                                     BrowserStateManager.lastVisitedUrl = urlString
@@ -165,25 +161,17 @@ fun BrowserScreen() {
                             override fun onPageFinished(view: WebView?, urlString: String?) {
                                 super.onPageFinished(view, urlString)
                                 isLoading = false
-                                
-                                // Save the state
-                                val state = Bundle()
-                                webView.saveState(state)
-                                BrowserStateManager.webViewState = state
                             }
                             
-                            
                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                return false // Let WebView handle URLs
+                                return false
                             }
                         }
                         
-                        // Load initial URL
                         loadUrl(url)
                     }
                 },
                 update = { view ->
-                    // Only update the WebView if the URL has changed and we're not in editing mode
                     if (!isEditing && view.url != url && !url.startsWith("about:blank")) {
                         view.loadUrl(url)
                     }
@@ -193,11 +181,6 @@ fun BrowserScreen() {
             // Save state when component is disposed
             DisposableEffect(webView) {
                 onDispose {
-                    // Save state
-                    val state = Bundle()
-                    webView.saveState(state)
-                    BrowserStateManager.webViewState = state
-                    
                     // Save the URL
                     webView.url?.let { currentUrl ->
                         if (currentUrl != "about:blank") {
