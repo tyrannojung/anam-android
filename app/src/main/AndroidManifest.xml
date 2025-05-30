@@ -29,6 +29,23 @@
             </intent-filter>
         </activity>
         
+        <!-- Module Activity running in separate process -->
+        <activity
+            android:name=".module.ModuleActivity"
+            android:process=":front_module_process"
+            android:exported="false"
+            android:theme="@style/Theme.Anamwallet" />
+            
+        <!-- Main App Service for IPC -->
+        <service
+            android:name=".service.MainAppService"
+            android:exported="false" />
+            
+        <!-- Auth Request Activity -->
+        <activity
+            android:name=".service.AuthRequestActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="false" />
             
     </application>
 

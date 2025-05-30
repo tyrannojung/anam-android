@@ -225,12 +225,21 @@ fun SimpleHubScreen(
                                 // 상세 보기 버튼
                                 Button(
                                     onClick = {
-                                        // 모듈 상세 화면으로 이동
-                                        navController.navigate("moduleDetail/$moduleId")
+                                        // 별도 프로세스에서 ModuleActivity 실행
+                                        val context = navController.context
+                                        val moduleInfo = moduleManager.getModuleInfo(moduleId)
+                                        if (moduleInfo != null) {
+                                            val intent = android.content.Intent(context, com.anam.wallet.module.ModuleActivity::class.java).apply {
+                                                putExtra(com.anam.wallet.module.ModuleActivity.EXTRA_MODULE_PATH, moduleInfo.apkPath)
+                                                putExtra(com.anam.wallet.module.ModuleActivity.EXTRA_MODULE_CLASS, moduleInfo.mainClassName)
+                                                putExtra(com.anam.wallet.module.ModuleActivity.EXTRA_MODULE_NAME, moduleInfo.name)
+                                            }
+                                            context.startActivity(intent)
+                                        }
                                     },
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("상세 보기")
+                                    Text("모듈 실행")
                                 }
                             }
                         }

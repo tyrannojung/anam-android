@@ -250,4 +250,33 @@ class SimpleModuleManager(internal var context: Context?) {
             false
         }
     }
+    
+    /**
+     * 모듈 정보 가져오기
+     */
+    fun getModuleInfo(moduleId: String): ModuleInfo? {
+        val apkPath = getModuleApkPath(moduleId) ?: return null
+        
+        // 기본적인 프론트 모듈 클래스 네임 설정
+        // 실제로는 메타데이터에서 가져와야 하지만, 
+        // 현재는 하드코딩된 값 사용
+        val mainClassName = "com.anam.wallet.apk.FrontModuleImpl"
+        
+        return ModuleInfo(
+            moduleId = moduleId,
+            name = "Front Module $moduleId",
+            apkPath = apkPath,
+            mainClassName = mainClassName
+        )
+    }
+    
+    /**
+     * 모듈 정보 데이터 클래스
+     */
+    data class ModuleInfo(
+        val moduleId: String,
+        val name: String,
+        val apkPath: String,
+        val mainClassName: String
+    )
 }
