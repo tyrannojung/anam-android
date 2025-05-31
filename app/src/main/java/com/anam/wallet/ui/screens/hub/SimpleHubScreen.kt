@@ -31,6 +31,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
 
 data class ModuleItem(
@@ -50,6 +53,7 @@ fun SimpleHubScreen() {
     var selectedTab by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
+    val navController = LocalNavController.current
     
     // 샘플 데이터
     val blockchainModules = remember {
@@ -217,7 +221,9 @@ fun SimpleHubScreen() {
             items(filteredModules) { module ->
                 ModuleCard(
                     module = module,
-                    onClick = { /* TODO: Navigate to detail */ }
+                    onClick = { 
+                        navController.navigate("ModuleDetail/${module.id}")
+                    }
                 )
             }
             

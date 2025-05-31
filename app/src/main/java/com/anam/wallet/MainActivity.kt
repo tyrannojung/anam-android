@@ -30,6 +30,7 @@ import com.anam.wallet.ui.screens.main.MainScreen
 import com.anam.wallet.ui.screens.settings.SettingsScreen
 import com.anam.wallet.ui.screens.settings.ThemeViewModel
 import com.anam.wallet.ui.screens.settings.LocaleViewModel
+import com.anam.wallet.ui.screens.moduledetail.ModuleDetailScreen
 import com.anam.wallet.ui.theme.AnamwalletTheme
 
 // Create a CompositionLocal for NavController
@@ -120,6 +121,13 @@ fun WalletApp(
                     SettingsScreen(
                         themeViewModel = themeViewModel,
                         localeViewModel = localeViewModel
+                    )
+                }
+                composable("ModuleDetail/{moduleId}") { backStackEntry ->
+                    val moduleId = backStackEntry.arguments?.getString("moduleId")
+                    ModuleDetailScreen(
+                        navController = navController,
+                        moduleId = moduleId
                     )
                 }
             }
