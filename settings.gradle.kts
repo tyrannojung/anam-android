@@ -20,4 +20,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "anamwallet"
 include(":app")
-include(":core")

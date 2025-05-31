@@ -2,7 +2,7 @@ package com.anam.wallet.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// AnamWallet Primary Colors
+// 비단주머니 Primary Colors
 val AnamBlue = Color(0xFF3172FF)
 val AnamBackground = Color(0xFF121212)
 val AnamWhite = Color(0xFFFFFFFF)

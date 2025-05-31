@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Anamwallet</string>
+    <string name="app_name">비단주머니</string>
 
     <!-- Header -->
-    <string name="header_title">AnamWallet</string>
+    <string name="header_title">비단주머니</string>
     <string name="settings">Settings</string>
 
     <!-- Bottom Navigation -->
