@@ -13,7 +13,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +27,8 @@ import com.anam.wallet.ui.screens.hub.SimpleHubScreen
 import com.anam.wallet.ui.screens.browser.BrowserScreen
 import com.anam.wallet.ui.screens.main.MainScreen
 import com.anam.wallet.ui.screens.settings.SettingsScreen
+import com.anam.wallet.ui.screens.settings.ThemeViewModel
+import com.anam.wallet.ui.screens.settings.LocaleViewModel
 import com.anam.wallet.ui.theme.AnamwalletTheme
 
 // Create a CompositionLocal for NavController
@@ -37,15 +42,30 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         setContent {
-            AnamwalletTheme {
-                WalletApp()
+            val context = this
+            val themeViewModel: ThemeViewModel = viewModel(
+                factory = ThemeViewModel.factory(context)
+            )
+            val localeViewModel: LocaleViewModel = viewModel(
+                factory = LocaleViewModel.factory(context)
+            )
+            val themeMode by themeViewModel.themeMode.collectAsState()
+            
+            AnamwalletTheme(themeMode = themeMode) {
+                WalletApp(
+                    themeViewModel = themeViewModel,
+                    localeViewModel = localeViewModel
+                )
             }
         }
     }
 }
 
 @Composable
-fun WalletApp() {
+fun WalletApp(
+    themeViewModel: ThemeViewModel,
+    localeViewModel: LocaleViewModel
+) {
     // Jetpack Navigation Compose에서 사용하는 내비게이션 컨트롤러 생성 함수
     // remember가 내부적으로 포함돼 있어, Composable이 리컴포지션(화면 갱신)되어도 navController 객체가 유지됨
     val navController = rememberNavController()
@@ -91,7 +111,10 @@ fun WalletApp() {
                     BrowserScreen()
                 }
                 composable("Settings") {
-                    SettingsScreen()
+                    SettingsScreen(
+                        themeViewModel = themeViewModel,
+                        localeViewModel = localeViewModel
+                    )
                 }
             }
         }

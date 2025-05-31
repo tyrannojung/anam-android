@@ -70,6 +70,9 @@ dependencies {
     // WebView for browser functionality
     implementation(libs.androidx.webkit)
     
+    // AppCompat for locale management
+    implementation(libs.androidx.appcompat)
+    
     // DID/Crypto dependencies
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)

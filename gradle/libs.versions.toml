@@ -12,6 +12,7 @@ navigationCompose = "2.7.7"
 materialIconsExtended = "1.6.3"
 coil = "2.5.0"
 webkit = "1.13.0"
+appcompat = "1.7.0"
 
 # DID/Crypto dependencies
 securityCrypto = "1.1.0-alpha06"
@@ -46,6 +47,9 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 # WebView
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+
+# AppCompat
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 # DID/Crypto libraries
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }

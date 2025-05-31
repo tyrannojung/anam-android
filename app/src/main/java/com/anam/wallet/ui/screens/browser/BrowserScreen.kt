@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -32,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anam.wallet.R
 import com.anam.wallet.ui.components.Header
-import com.anam.wallet.ui.theme.AnamDarkGray
 
 // Companion object to store the last visited URL across recompositions
 private object BrowserStateManager {
@@ -69,7 +67,7 @@ fun BrowserScreen() {
     ) {
         // Header with WebView title
         Header(title = "WebView")
-        // URL input bar with AnamWallet style
+        // URL input bar with modern style
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -80,17 +78,18 @@ fun BrowserScreen() {
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF333333))
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // HTTPS icon
-                Image(
+                Icon(
                     painter = painterResource(id = R.drawable.img_web_https),
                     contentDescription = "HTTPS",
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -105,7 +104,7 @@ fun BrowserScreen() {
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     textStyle = TextStyle(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
@@ -122,17 +121,18 @@ fun BrowserScreen() {
             Spacer(modifier = Modifier.width(20.dp))
             
             // Bookmark button
-            Image(
+            Icon(
                 painter = painterResource(id = R.drawable.img_web_bookmark),
                 contentDescription = "Bookmark",
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(28.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
                         // TODO: Add bookmark functionality
-                    }
+                    },
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
@@ -206,59 +206,68 @@ fun BrowserScreen() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
-                .background(AnamDarkGray),
+                .height(56.dp)
+                .background(MaterialTheme.colorScheme.surface),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Back button
-            Image(
+            Icon(
                 painter = painterResource(
                     id = if (webView.canGoBack()) R.drawable.img_web_back_on 
                     else R.drawable.img_web_back_off
                 ),
                 contentDescription = "Back",
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(28.dp)
                     .clickable(
                         enabled = webView.canGoBack(),
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
                         webView.goBack()
-                    }
+                    },
+                tint = if (webView.canGoBack()) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
             
             // Forward button
-            Image(
+            Icon(
                 painter = painterResource(
                     id = if (webView.canGoForward()) R.drawable.img_web_forward_on 
                     else R.drawable.img_web_forward_off
                 ),
                 contentDescription = "Forward",
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(28.dp)
                     .clickable(
                         enabled = webView.canGoForward(),
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
                         webView.goForward()
-                    }
+                    },
+                tint = if (webView.canGoForward()) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
             
             // Bookmark list button
-            Image(
+            Icon(
                 painter = painterResource(id = R.drawable.img_web_list),
                 contentDescription = "Bookmarks",
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(28.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
                         // TODO: Show bookmarks list
-                    }
+                    },
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
