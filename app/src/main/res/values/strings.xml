@@ -12,32 +12,6 @@
     <string name="nav_browser">Browser</string>
     <string name="nav_activity">Activity</string>
 
-    <!-- Main Screen -->
-    <string name="loaded_modules">Loaded Modules</string>
-    <string name="no_modules">No modules loaded</string>
-    <string name="no_modules_hint">Go to Hub to download and install modules</string>
-
-    <!-- Hub Screen -->
-    <string name="module_hub">Module Hub</string>
-    <string name="module_management">Module Management</string>
-    <string name="module_id">Module ID</string>
-    <string name="download_load_module">Download &amp; Load Module</string>
-    <string name="installed_modules">Installed Modules</string>
-    <string name="no_modules_installed">No modules installed</string>
-    <string name="enter_module_id_hint">Enter a module ID and download to get started</string>
-
-    <!-- Module Card -->
-    <string name="module_icon">Module icon</string>
-    <string name="unload_module">Unload module</string>
-    <string name="network_mainnet">MAINNET</string>
-    <string name="network_testnet">TESTNET</string>
-    <string name="chain_id">Chain ID: %1$s</string>
-    <string name="default_account_name">Account</string>
-    <string name="more_accounts">+ %1$d more accounts</string>
-    <string name="module_version">v%1$s</string>
-    <string name="network">Network</string>
-    <string name="account">Account</string>
-
     <!-- Screen Titles -->
     <string name="city_screen_title">DID 신분증</string>
     <string name="browser_screen_title">Hello Browser</string>
