@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -55,41 +56,60 @@ fun SimpleHubScreen() {
         listOf(
             ModuleItem(
                 id = "1",
-                name = "DeFi Wallet",
-                description = "탈중앙화 금융 지갑으로 안전하게 자산을 관리하세요",
+                name = "Bitcoin Wallet",
+                description = "비트코인을 안전하게 보관하고 전송하세요",
                 icon = Icons.Filled.AccountBalanceWallet,
-                category = "금융",
-                isNew = true,
-                rating = 4.8f,
-                downloads = "10K+"
+                category = "BTC",
+                isNew = false,
+                rating = 4.9f,
+                downloads = "50K+"
             ),
             ModuleItem(
                 id = "2", 
-                name = "NFT Gallery",
-                description = "당신의 NFT 컬렉션을 한눈에 확인하고 관리하세요",
-                icon = Icons.Filled.Image,
-                category = "아트",
-                rating = 4.5f,
-                downloads = "5K+"
+                name = "Ethereum Wallet",
+                description = "이더리움과 ERC-20 토큰을 관리하세요",
+                icon = Icons.Filled.AccountBalance,
+                category = "ETH",
+                rating = 4.8f,
+                downloads = "30K+"
             ),
             ModuleItem(
                 id = "3",
-                name = "Staking Manager",
-                description = "다양한 블록체인에서 스테이킹 수익을 관리하세요",
-                icon = Icons.Filled.TrendingUp,
-                category = "투자",
+                name = "Sui Wallet",
+                description = "Sui 네트워크의 자산을 빠르고 안전하게 관리하세요",
+                icon = Icons.Filled.Speed,
+                category = "SUI",
+                isNew = true,
                 rating = 4.7f,
-                downloads = "8K+"
+                downloads = "15K+"
             ),
             ModuleItem(
                 id = "4",
-                name = "DAO Voting",
-                description = "탈중앙화 조직의 의사결정에 참여하세요",
-                icon = Icons.Filled.HowToVote,
-                category = "거버넌스",
+                name = "Solana Wallet",
+                description = "솔라나와 SPL 토큰을 초고속으로 전송하세요",
+                icon = Icons.Filled.FlashOn,
+                category = "SOL",
+                rating = 4.6f,
+                downloads = "20K+"
+            ),
+            ModuleItem(
+                id = "5",
+                name = "Polygon Wallet",
+                description = "폴리곤 네트워크에서 저렴한 수수료로 거래하세요",
+                icon = Icons.Filled.Hexagon,
+                category = "MATIC",
+                rating = 4.5f,
+                downloads = "12K+"
+            ),
+            ModuleItem(
+                id = "6",
+                name = "Arbitrum Wallet",
+                description = "아비트럼 L2에서 빠르고 저렴하게 이더리움을 사용하세요",
+                icon = Icons.Filled.Layers,
+                category = "ARB",
                 isNew = true,
-                rating = 4.3f,
-                downloads = "3K+"
+                rating = 4.4f,
+                downloads = "8K+"
             )
         )
     }
@@ -118,7 +138,7 @@ fun SimpleHubScreen() {
                 id = "7",
                 name = "Notes",
                 description = "암호화된 메모로 중요한 정보를 안전하게 기록하세요",
-                icon = Icons.Filled.Note,
+                icon = Icons.AutoMirrored.Filled.Note,
                 category = "생산성",
                 isNew = true,
                 rating = 4.4f,

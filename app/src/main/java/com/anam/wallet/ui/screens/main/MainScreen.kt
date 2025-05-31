@@ -197,7 +197,7 @@ private fun InstallStep(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
         // 번호 서클
         Box(
@@ -220,7 +220,9 @@ private fun InstallStep(
         
         // 아이콘과 텍스트
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .align(Alignment.CenterVertically),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
