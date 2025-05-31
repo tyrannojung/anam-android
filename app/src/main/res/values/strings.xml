@@ -48,6 +48,8 @@
     <string name="main_section_blockchain">블록체인</string>
     <string name="main_section_apps">앱</string>
     <string name="main_add_more_modules">더 많은 모듈 추가하기</string>
+    <string name="main_blockchain_active">활성</string>
+    <string name="main_blockchain_activate">활성화</string>
     
     <!-- Hub Screen -->
     <string name="hub_search_hint">모듈 검색</string>

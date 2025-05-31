@@ -48,6 +48,8 @@
     <string name="main_section_blockchain">Blockchain</string>
     <string name="main_section_apps">Apps</string>
     <string name="main_add_more_modules">Add more modules</string>
+    <string name="main_blockchain_active">Active</string>
+    <string name="main_blockchain_activate">Activate</string>
     
     <!-- Hub Screen -->
     <string name="hub_search_hint">Search modules</string>

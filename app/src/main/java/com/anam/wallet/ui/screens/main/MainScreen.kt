@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
 
 @Composable
@@ -251,6 +252,10 @@ private fun InstallStep(
 @Composable
 private fun ModuleListScreen() {
     val scrollState = rememberScrollState()
+    val navController = LocalNavController.current
+    
+    // 활성화된 블록체인 모듈 ID 상태
+    var activeBlockchainId by remember { mutableStateOf("btc") }
     
     // 샘플 설치된 모듈 데이터
     val installedBlockchainModules = remember {
@@ -260,24 +265,21 @@ private fun ModuleListScreen() {
                 name = "Bitcoin",
                 icon = Icons.Filled.CurrencyBitcoin,
                 primaryColor = Color(0xFFF7931A),
-                balance = "0.0234 BTC",
-                value = "₩1,234,567"
+                balance = "0.0234 BTC"
             ),
             InstalledModule(
                 id = "eth",
                 name = "Ethereum",
                 icon = Icons.Filled.AccountBalance,
                 primaryColor = Color(0xFF627EEA),
-                balance = "1.5 ETH",
-                value = "₩3,456,789"
+                balance = "1.5 ETH"
             ),
             InstalledModule(
                 id = "sui",
                 name = "Sui",
                 icon = Icons.Filled.Speed,
                 primaryColor = Color(0xFF4DA2FF),
-                balance = "500 SUI",
-                value = "₩567,890"
+                balance = "500 SUI"
             )
         )
     }
@@ -304,11 +306,15 @@ private fun ModuleListScreen() {
             .verticalScroll(scrollState)
     ) {
         // 블록체인 섹션
-        ModuleSection(
+        BlockchainModuleSection(
             title = stringResource(R.string.main_section_blockchain),
             modules = installedBlockchainModules,
+            activeModuleId = activeBlockchainId,
+            onActivateModule = { moduleId ->
+                activeBlockchainId = moduleId
+            },
             onModuleClick = { module ->
-                // TODO: 모듈 실행
+                // TODO: 블록체인 모듈 클릭 시 동작
             }
         )
         
@@ -319,7 +325,7 @@ private fun ModuleListScreen() {
             title = stringResource(R.string.main_section_apps),
             modules = installedAppModules,
             onModuleClick = { module ->
-                // TODO: 모듈 실행
+                // TODO: 앱 모듈 클릭 시 동작
             }
         )
         
@@ -330,11 +336,51 @@ private fun ModuleListScreen() {
                 .padding(20.dp)
         ) {
             AddMoreCard(
-                onClick = { /* TODO: Navigate to Hub */ }
+                onClick = { 
+                    navController.navigate("Hub") {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                }
             )
         }
         
         Spacer(modifier = Modifier.height(80.dp)) // Bottom navigation 공간
+    }
+}
+
+@Composable
+private fun BlockchainModuleSection(
+    title: String,
+    modules: List<InstalledModule>,
+    activeModuleId: String,
+    onActivateModule: (String) -> Unit,
+    onModuleClick: (InstalledModule) -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+        )
+        
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(modules.size) { index ->
+                BlockchainModuleCard(
+                    module = modules[index],
+                    isActive = modules[index].id == activeModuleId,
+                    onActivate = { onActivateModule(modules[index].id) },
+                    onClick = { onModuleClick(modules[index]) }
+                )
+            }
+        }
     }
 }
 
@@ -364,6 +410,169 @@ private fun ModuleSection(
                     module = modules[index],
                     onClick = { onModuleClick(modules[index]) }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockchainModuleCard(
+    module: InstalledModule,
+    isActive: Boolean,
+    onActivate: () -> Unit,
+    onClick: () -> Unit
+) {
+    val animatedScale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+    
+    val borderColor by animateColorAsState(
+        targetValue = if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "borderColor"
+    )
+    
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .height(180.dp)
+            .scale(animatedScale)
+            .clickable { onClick() }
+            .then(
+                if (isActive) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = borderColor,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                } else Modifier
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isActive) 4.dp else 2.dp,
+            pressedElevation = 8.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // 상단: 아이콘과 활성화 상태
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                // 아이콘 박스
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            module.primaryColor.copy(alpha = if (isActive) 0.15f else 0.1f)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = module.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = module.primaryColor
+                    )
+                }
+                
+                // 활성화 상태 표시
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.main_blockchain_active),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // 중간: 이름과 잔액
+            Column {
+                Text(
+                    text = module.name,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                if (module.balance != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = module.balance,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // 하단: 활성화 버튼
+            if (!isActive) {
+                Button(
+                    onClick = { 
+                        onActivate()
+                        // 클릭 이벤트가 카드로 전파되지 않도록 함
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .clickable(enabled = false) { }, // 클릭 이벤트 전파 방지
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp
+                    )
+                ) {
+                    Text(
+                        text = stringResource(R.string.main_blockchain_activate),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                // 활성화된 경우 빈 공간
+                Spacer(modifier = Modifier.height(36.dp))
             }
         }
     }
@@ -437,74 +646,6 @@ private fun MiniAppCard(
                 )
             }
         }
-    } else {
-        // 블록체인 모듈 - 큰 직사각형 카드
-        Card(
-            modifier = Modifier
-                .width(160.dp)
-                .height(180.dp)
-                .scale(animatedScale)
-                .clickable { onClick() },
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp,
-                pressedElevation = 8.dp
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // 아이콘 박스
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            module.primaryColor.copy(alpha = 0.1f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = module.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = module.primaryColor
-                    )
-                }
-                
-                // 컨텐츠
-                Column {
-                    Text(
-                        text = module.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    if (module.balance != null && module.value != null) {
-                        Text(
-                            text = module.balance,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = module.value,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -558,7 +699,6 @@ data class InstalledModule(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val primaryColor: Color,
     val balance: String? = null,
-    val value: String? = null,
     val subtitle: String? = null,
     val isApp: Boolean = false
 )
