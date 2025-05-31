@@ -58,9 +58,8 @@ fun SimpleHubScreen() {
                 id = "1",
                 name = "Bitcoin Wallet",
                 description = "비트코인을 안전하게 보관하고 전송하세요",
-                icon = Icons.Filled.AccountBalanceWallet,
+                icon = Icons.Filled.Wallet,
                 category = "BTC",
-                isNew = false,
                 rating = 4.9f,
                 downloads = "50K+"
             ),
@@ -68,7 +67,7 @@ fun SimpleHubScreen() {
                 id = "2", 
                 name = "Ethereum Wallet",
                 description = "이더리움과 ERC-20 토큰을 관리하세요",
-                icon = Icons.Filled.AccountBalance,
+                icon = Icons.Filled.Wallet,
                 category = "ETH",
                 rating = 4.8f,
                 downloads = "30K+"
@@ -77,9 +76,8 @@ fun SimpleHubScreen() {
                 id = "3",
                 name = "Sui Wallet",
                 description = "Sui 네트워크의 자산을 빠르고 안전하게 관리하세요",
-                icon = Icons.Filled.Speed,
+                icon = Icons.Filled.Wallet,
                 category = "SUI",
-                isNew = true,
                 rating = 4.7f,
                 downloads = "15K+"
             ),
@@ -87,29 +85,10 @@ fun SimpleHubScreen() {
                 id = "4",
                 name = "Solana Wallet",
                 description = "솔라나와 SPL 토큰을 초고속으로 전송하세요",
-                icon = Icons.Filled.FlashOn,
+                icon = Icons.Filled.Wallet,
                 category = "SOL",
                 rating = 4.6f,
                 downloads = "20K+"
-            ),
-            ModuleItem(
-                id = "5",
-                name = "Polygon Wallet",
-                description = "폴리곤 네트워크에서 저렴한 수수료로 거래하세요",
-                icon = Icons.Filled.Hexagon,
-                category = "MATIC",
-                rating = 4.5f,
-                downloads = "12K+"
-            ),
-            ModuleItem(
-                id = "6",
-                name = "Arbitrum Wallet",
-                description = "아비트럼 L2에서 빠르고 저렴하게 이더리움을 사용하세요",
-                icon = Icons.Filled.Layers,
-                category = "ARB",
-                isNew = true,
-                rating = 4.4f,
-                downloads = "8K+"
             )
         )
     }
@@ -123,8 +102,7 @@ fun SimpleHubScreen() {
                 icon = Icons.Filled.AccountBalance,
                 category = "공공서비스",
                 rating = 4.7f,
-                downloads = "100K+",
-                isNew = true
+                downloads = "100K+"
             )
         )
     }
@@ -329,34 +307,13 @@ private fun ModuleCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = module.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    if (module.isNew) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "NEW",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onTertiary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = module.name,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
@@ -373,22 +330,6 @@ private fun ModuleCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Rating
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = module.rating.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.width(16.dp))
-                    
                     // Downloads
                     Icon(
                         imageVector = Icons.Outlined.Download,
@@ -406,15 +347,22 @@ private fun ModuleCard(
                     Spacer(modifier = Modifier.width(16.dp))
                     
                     // Category
-                    Surface(
+                    Card(
+                        modifier = Modifier,
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 0.dp
+                        )
                     ) {
                         Text(
                             text = module.category,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
