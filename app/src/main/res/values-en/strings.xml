@@ -50,6 +50,12 @@
     <string name="main_blockchain">Blockchain-based</string>
     <string name="main_onetouch">One-touch Login</string>
     
+    <!-- Hub Screen -->
+    <string name="hub_search_hint">Search modules</string>
+    <string name="hub_tab_blockchain">Blockchain Modules</string>
+    <string name="hub_tab_apps">App Modules</string>
+    <string name="hub_no_results">No results found</string>
+    
     <!-- Identity Screen -->
     <string name="identity_name">Name</string>
     <string name="identity_birth_date">Date of Birth</string>

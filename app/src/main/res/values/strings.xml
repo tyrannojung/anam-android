@@ -50,6 +50,12 @@
     <string name="main_blockchain">블록체인 기반</string>
     <string name="main_onetouch">원터치 로그인</string>
     
+    <!-- Hub Screen -->
+    <string name="hub_search_hint">모듈 검색</string>
+    <string name="hub_tab_blockchain">블록체인 모듈</string>
+    <string name="hub_tab_apps">앱 모듈</string>
+    <string name="hub_no_results">검색 결과가 없습니다</string>
+    
     <!-- Identity Screen -->
     <string name="identity_name">이름</string>
     <string name="identity_birth_date">생년월일</string>
