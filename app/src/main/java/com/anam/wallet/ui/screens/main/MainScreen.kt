@@ -2,18 +2,24 @@ package com.anam.wallet.ui.screens.main
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -23,32 +29,65 @@ import com.anam.wallet.R
 
 @Composable
 fun MainScreen() {
+    // 모듈이 설치되어 있는지 체크하는 상태 (실제로는 ViewModel에서 관리해야 함)
+    val hasModules by remember { mutableStateOf(false) }
+    
+    if (hasModules) {
+        // 모듈이 있을 때의 화면 (추후 구현)
+        ModuleListScreen()
+    } else {
+        // 모듈이 없을 때의 온보딩 화면
+        EmptyModuleScreen()
+    }
+}
+
+@Composable
+private fun EmptyModuleScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 애니메이션 효과를 위한 색상
-        val cardColor by animateColorAsState(
-            targetValue = MaterialTheme.colorScheme.surface,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessMedium
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        // 빈 상자 일러스트
+        EmptyBoxIllustration()
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // 메인 메시지
+        Text(
+            text = stringResource(R.string.main_empty_title),
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
             ),
-            label = "cardColor"
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface
         )
         
-        // 메인 카드
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // 서브 메시지
+        Text(
+            text = stringResource(R.string.main_empty_subtitle),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        // 설치 가이드 카드
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = cardColor
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 0.dp
@@ -57,109 +96,164 @@ fun MainScreen() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(24.dp)
             ) {
-                // 아이콘
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.tertiary
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.AccountBalanceWallet,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
                 Text(
-                    text = stringResource(R.string.main_welcome),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
+                    text = stringResource(R.string.main_install_guide_title),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
                     ),
-                    textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 
-                Text(
-                    text = stringResource(R.string.main_subtitle),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                // 스텝 1
+                InstallStep(
+                    number = "1",
+                    icon = Icons.Filled.Hub,
+                    text = stringResource(R.string.main_install_step1)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 스텝 2
+                InstallStep(
+                    number = "2",
+                    icon = Icons.Filled.TouchApp,
+                    text = stringResource(R.string.main_install_step2)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // 스텝 3
+                InstallStep(
+                    number = "3",
+                    icon = Icons.Filled.PlayArrow,
+                    text = stringResource(R.string.main_install_step3)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyBoxIllustration() {
+    val animatedSize by animateDpAsState(
+        targetValue = 120.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "boxSize"
+    )
+    
+    Box(
+        modifier = Modifier.size(animatedSize),
+        contentAlignment = Alignment.Center
+    ) {
+        // 뒷면 상자
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .offset(x = 10.dp, y = 10.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(12.dp)
+                )
+        )
         
-        // 기능 안내 카드들
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // 메인 상자
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            FeatureCard(
-                modifier = Modifier.weight(1f),
-                title = stringResource(R.string.main_secure_storage),
-                description = stringResource(R.string.main_blockchain)
-            )
-            FeatureCard(
-                modifier = Modifier.weight(1f),
-                title = stringResource(R.string.main_easy_auth),
-                description = stringResource(R.string.main_onetouch)
+            Icon(
+                imageVector = Icons.Outlined.Inventory2,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
     }
 }
 
 @Composable
-private fun FeatureCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    description: String
+private fun InstallStep(
+    number: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
     ) {
-        Column(
+        // 번호 서클
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold
+                text = number,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold
                 ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        // 아이콘과 텍스트
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModuleListScreen() {
+    // 모듈이 설치되어 있을 때의 화면 (추후 구현)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "모듈 리스트 화면",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

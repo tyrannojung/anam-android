@@ -8,7 +8,6 @@
     <string name="header_title_browser">웹뷰</string>
     <string name="header_title_identity">디지털 신분증</string>
     <string name="header_title_settings">설정</string>
-    <string name="settings">설정</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_main">메인</string>
@@ -17,10 +16,6 @@
     <string name="nav_browser">브라우저</string>
     <string name="nav_settings">설정</string>
 
-    <!-- Screen Titles -->
-    <string name="city_screen_title">DID 신분증</string>
-    <string name="browser_screen_title">Hello Browser</string>
-    <string name="settings_screen_title">설정</string>
     
     <!-- Settings Screen -->
     <string name="settings_theme">테마</string>
@@ -40,15 +35,14 @@
     <string name="settings_license">라이선스</string>
     <string name="settings_license_description">오픈소스 라이선스 정보</string>
     
-    <!-- Main Screen -->
-    <string name="main_welcome">비단주머니에 오신 것을 환영합니다</string>
-    <string name="main_subtitle">디지털 신원을 안전하게 관리하세요</string>
-    <string name="main_secure_storage">안전한 보관</string>
-    <string name="main_secure_storage_description">디지털 신분증과 자격증명을\n안전하게 보관하세요</string>
-    <string name="main_easy_auth">간편한 인증</string>
-    <string name="main_easy_auth_description">필요한 정보만 선택하여\n간편하게 인증하세요</string>
-    <string name="main_blockchain">블록체인 기반</string>
-    <string name="main_onetouch">원터치 로그인</string>
+    
+    <!-- Main Empty State -->
+    <string name="main_empty_title">모듈을 추가해 주세요</string>
+    <string name="main_empty_subtitle">허브에서 다양한 모듈을 설치하여\n월렛을 확장하세요</string>
+    <string name="main_install_guide_title">모듈 설치 방법</string>
+    <string name="main_install_step1">하단 허브 탭 이동</string>
+    <string name="main_install_step2">원하는 모듈 선택 후 설치</string>
+    <string name="main_install_step3">메인으로 돌아와서 미니앱 실행</string>
     
     <!-- Hub Screen -->
     <string name="hub_search_hint">모듈 검색</string>
