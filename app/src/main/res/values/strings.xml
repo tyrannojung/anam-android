@@ -10,10 +10,10 @@
     <string name="nav_did">Identity</string>
     <string name="nav_hub">Hub</string>
     <string name="nav_browser">Browser</string>
-    <string name="nav_activity">Activity</string>
+    <string name="nav_settings">Settings</string>
 
     <!-- Screen Titles -->
     <string name="city_screen_title">DID 신분증</string>
     <string name="browser_screen_title">Hello Browser</string>
-    <string name="activity_screen_title">Hello Activity</string>
+    <string name="settings_screen_title">Settings</string>
 </resources>

@@ -47,16 +47,16 @@ fun BottomNavBar(
             labelResId = R.string.nav_main
         ),
         NavigationItem(
+            route = "Hub",
+            icon = Icons.Outlined.Hub,
+            selectedIcon = Icons.Filled.Hub,
+            labelResId = R.string.nav_hub
+        ),
+        NavigationItem(
             route = "Browser",
             icon = Icons.Outlined.Language,
             selectedIcon = Icons.Filled.Language,
             labelResId = R.string.nav_browser
-        ),
-        NavigationItem(
-            route = "Activity",
-            icon = Icons.Outlined.Receipt,
-            selectedIcon = Icons.Filled.Receipt,
-            labelResId = R.string.nav_activity
         ),
         NavigationItem(
             route = "Identity",
@@ -65,10 +65,10 @@ fun BottomNavBar(
             labelResId = R.string.nav_did
         ),
         NavigationItem(
-            route = "Hub",
+            route = "Settings",
             icon = Icons.Outlined.Settings,
             selectedIcon = Icons.Filled.Settings,
-            labelResId = R.string.nav_hub
+            labelResId = R.string.nav_settings
         )
     )
 

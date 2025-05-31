@@ -20,10 +20,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.anam.wallet.ui.components.BottomNavBar
 import com.anam.wallet.ui.components.Header
-import com.anam.wallet.ui.screens.activity.ActivityScreen
 import com.anam.wallet.ui.screens.hub.SimpleHubScreen
 import com.anam.wallet.ui.screens.browser.BrowserScreen
 import com.anam.wallet.ui.screens.main.MainScreen
+import com.anam.wallet.ui.screens.settings.SettingsScreen
 import com.anam.wallet.ui.theme.AnamwalletTheme
 
 // Create a CompositionLocal for NavController
@@ -90,8 +90,8 @@ fun WalletApp() {
                 composable("Browser") {
                     BrowserScreen()
                 }
-                composable("Activity") {
-                    ActivityScreen()
+                composable("Settings") {
+                    SettingsScreen()
                 }
             }
         }
