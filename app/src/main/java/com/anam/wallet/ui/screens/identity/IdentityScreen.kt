@@ -36,17 +36,6 @@ fun IdentityScreen() {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
-        Text(
-            text = "디지털 신분증",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            textAlign = TextAlign.Center
-        )
-        
         when {
             uiState.isLoading -> {
                 CircularProgressIndicator()

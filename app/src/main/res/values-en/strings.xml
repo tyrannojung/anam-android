@@ -3,6 +3,11 @@
 
     <!-- Header -->
     <string name="header_title">Silk Pouch</string>
+    <string name="header_title_main">Silk Pouch</string>
+    <string name="header_title_hub">Hub</string>
+    <string name="header_title_browser">WebView</string>
+    <string name="header_title_identity">Identity</string>
+    <string name="header_title_settings">Settings</string>
     <string name="settings">Settings</string>
 
     <!-- Bottom Navigation -->

@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anam.wallet.R
-import com.anam.wallet.ui.components.Header
 
 // Companion object to store the last visited URL across recompositions
 private object BrowserStateManager {
@@ -65,8 +64,6 @@ fun BrowserScreen() {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Header with WebView title
-        Header(title = "WebView")
         // URL input bar with modern style
         Row(
             modifier = Modifier

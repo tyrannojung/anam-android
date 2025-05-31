@@ -16,6 +16,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -77,10 +78,15 @@ fun WalletApp(
     CompositionLocalProvider(LocalNavController provides navController) {
         Scaffold(
             topBar = { 
-                // Don't show header for Browser screen or Detail screen
-                if (currentScreen != "Browser") {
-                    Header() 
+                val headerTitle = when (currentScreen) {
+                    "Main" -> stringResource(R.string.header_title_main)
+                    "Hub" -> stringResource(R.string.header_title_hub)
+                    "Browser" -> stringResource(R.string.header_title_browser)
+                    "Identity" -> stringResource(R.string.header_title_identity)
+                    "Settings" -> stringResource(R.string.header_title_settings)
+                    else -> stringResource(R.string.header_title)
                 }
+                Header(title = headerTitle) 
             },
             bottomBar = {
                 // Always show bottom navigation (including Detail screen)

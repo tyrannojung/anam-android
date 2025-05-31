@@ -3,6 +3,11 @@
 
     <!-- Header -->
     <string name="header_title">비단주머니</string>
+    <string name="header_title_main">비단주머니</string>
+    <string name="header_title_hub">허브</string>
+    <string name="header_title_browser">웹뷰</string>
+    <string name="header_title_identity">디지털 신분증</string>
+    <string name="header_title_settings">설정</string>
     <string name="settings">설정</string>
 
     <!-- Bottom Navigation -->
