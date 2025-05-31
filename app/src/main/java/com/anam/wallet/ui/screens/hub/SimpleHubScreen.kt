@@ -118,40 +118,13 @@ fun SimpleHubScreen() {
         listOf(
             ModuleItem(
                 id = "5",
-                name = "Password Manager",
-                description = "모든 비밀번호를 안전하게 보관하고 관리하세요",
-                icon = Icons.Filled.Lock,
-                category = "보안",
-                rating = 4.9f,
-                downloads = "50K+"
-            ),
-            ModuleItem(
-                id = "6",
-                name = "QR Scanner",
-                description = "빠르고 정확한 QR 코드 스캔 기능",
-                icon = Icons.Filled.QrCodeScanner,
-                category = "유틸리티",
-                rating = 4.6f,
-                downloads = "20K+"
-            ),
-            ModuleItem(
-                id = "7",
-                name = "Notes",
-                description = "암호화된 메모로 중요한 정보를 안전하게 기록하세요",
-                icon = Icons.AutoMirrored.Filled.Note,
-                category = "생산성",
-                isNew = true,
-                rating = 4.4f,
-                downloads = "15K+"
-            ),
-            ModuleItem(
-                id = "8",
-                name = "File Vault",
-                description = "중요한 파일을 암호화하여 안전하게 보관하세요",
-                icon = Icons.Filled.Folder,
-                category = "보안",
+                name = "정부24",
+                description = "등본, 초본 등 정부 서류를 간편하게 발급받으세요",
+                icon = Icons.Filled.AccountBalance,
+                category = "공공서비스",
                 rating = 4.7f,
-                downloads = "12K+"
+                downloads = "100K+",
+                isNew = true
             )
         )
     }

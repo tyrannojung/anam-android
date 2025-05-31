@@ -44,6 +44,11 @@
     <string name="main_install_step2">Select and install desired module</string>
     <string name="main_install_step3">Return to Main and run mini-app</string>
     
+    <!-- Main Module List -->
+    <string name="main_section_blockchain">Blockchain</string>
+    <string name="main_section_apps">Apps</string>
+    <string name="main_add_more_modules">Add more modules</string>
+    
     <!-- Hub Screen -->
     <string name="hub_search_hint">Search modules</string>
     <string name="hub_tab_blockchain">Blockchain Modules</string>
