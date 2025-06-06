@@ -15,9 +15,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Note
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 
 @Composable
 fun MainScreen() {
@@ -263,21 +267,21 @@ private fun ModuleListScreen() {
             InstalledModule(
                 id = "btc",
                 name = "Bitcoin",
-                icon = Icons.Filled.CurrencyBitcoin,
+                iconRes = R.drawable.ic_blockchain_bitcoin,
                 primaryColor = Color(0xFFF7931A),
                 balance = "0.0234 BTC"
             ),
             InstalledModule(
                 id = "eth",
                 name = "Ethereum",
-                icon = Icons.Filled.AccountBalance,
+                iconRes = R.drawable.ic_blockchain_ethereum,
                 primaryColor = Color(0xFF627EEA),
                 balance = "1.5 ETH"
             ),
             InstalledModule(
                 id = "sui",
                 name = "Sui",
-                icon = Icons.Filled.Speed,
+                iconRes = R.drawable.ic_blockchain_sui,
                 primaryColor = Color(0xFF4DA2FF),
                 balance = "500 SUI"
             )
@@ -292,8 +296,36 @@ private fun ModuleListScreen() {
             InstalledModule(
                 id = "gov24",
                 name = "정부24",
-                icon = Icons.Filled.AccountBalance,
+                iconRes = R.drawable.ic_blockchain_gov,
                 primaryColor = Color(0xFF1976D2),
+                isApp = true
+            ),
+            InstalledModule(
+                id = "korea",
+                name = "고려대학교",
+                iconRes = R.drawable.ic_blockchain_korea,
+                primaryColor = Color(0xFF8B0029),
+                isApp = true
+            ),
+            InstalledModule(
+                id = "dong",
+                name = "동백전",
+                iconRes = R.drawable.ic_blockchain_dong,
+                primaryColor = Color(0xFFFF6B6B),
+                isApp = true
+            ),
+            InstalledModule(
+                id = "defi",
+                name = "DeFi Hub",
+                iconRes = R.drawable.ic_blockchain_defi,
+                primaryColor = Color(0xFF7B3FF2),
+                isApp = true
+            ),
+            InstalledModule(
+                id = "tmoney",
+                name = "T-money",
+                iconRes = R.drawable.ic_blockchain_tmoney,
+                primaryColor = Color(0xFF0052CC),
                 isApp = true
             )
         )
@@ -314,7 +346,8 @@ private fun ModuleListScreen() {
                 activeBlockchainId = moduleId
             },
             onModuleClick = { module ->
-                // TODO: 블록체인 모듈 클릭 시 동작
+                // 모든 블록체인 모듈 클릭 시 ethereum 미니앱 실행
+                navController.navigate("miniapp/ethereum")
             }
         )
         
@@ -325,7 +358,8 @@ private fun ModuleListScreen() {
             title = stringResource(R.string.main_section_apps),
             modules = installedAppModules,
             onModuleClick = { module ->
-                // TODO: 앱 모듈 클릭 시 동작
+                // 모든 앱 모듈은 정부24로 연결
+                navController.navigate("miniapp/government24")
             }
         )
         
@@ -400,16 +434,33 @@ private fun ModuleSection(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
         )
         
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
+        // 3개씩 그리드로 표시
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(modules.size) { index ->
-                MiniAppCard(
-                    module = modules[index],
-                    onClick = { onModuleClick(modules[index]) }
-                )
+            modules.chunked(3).forEach { rowModules ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowModules.forEach { module ->
+                        Box(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            MiniAppCard(
+                                module = module,
+                                onClick = { onModuleClick(module) }
+                            )
+                        }
+                    }
+                    // 빈 공간 채우기 (3개 미만일 때)
+                    repeat(3 - rowModules.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
@@ -486,11 +537,10 @@ private fun BlockchainModuleCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = module.icon,
+                    Image(
+                        painter = painterResource(id = module.iconRes),
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = module.primaryColor
+                        modifier = Modifier.size(32.dp)
                     )
                 }
                 
@@ -596,7 +646,8 @@ private fun MiniAppCard(
         // 앱 모듈 - 작은 정사각형 카드
         Card(
             modifier = Modifier
-                .size(100.dp)
+                .fillMaxWidth()
+                .aspectRatio(1f)
                 .scale(animatedScale)
                 .clickable { onClick() },
             shape = RoundedCornerShape(20.dp),
@@ -625,11 +676,10 @@ private fun MiniAppCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = module.icon,
+                    Image(
+                        painter = painterResource(id = module.iconRes),
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = module.primaryColor
+                        modifier = Modifier.size(32.dp)
                     )
                 }
                 
@@ -696,7 +746,7 @@ private fun AddMoreCard(
 data class InstalledModule(
     val id: String,
     val name: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val iconRes: Int,
     val primaryColor: Color,
     val balance: String? = null,
     val subtitle: String? = null,

@@ -1,0 +1,24 @@
+{
+  "app_id": "ethereum",
+  "name": "이더리움 지갑",
+  "name_en": "Ethereum Wallet",
+  "version": "1.0.0",
+  "description": "비단주머니 이더리움 지갑 - 이더리움 자산을 안전하게 관리하세요",
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "이더리움 지갑",
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f8f9fa"
+  },
+  "permissions": [
+    "storage",
+    "blockchain_ethereum",
+    "network_access"
+  ],
+  "requiredAPIs": [
+    "window.ethereum"
+  ]
+}

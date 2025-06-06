@@ -32,6 +32,7 @@ import com.anam.wallet.ui.screens.settings.ThemeViewModel
 import com.anam.wallet.ui.screens.settings.LocaleViewModel
 import com.anam.wallet.ui.screens.moduledetail.ModuleDetailScreen
 import com.anam.wallet.ui.theme.AnamwalletTheme
+import com.anam.wallet.ui.screens.miniapp.MiniAppScreen
 
 // Create a CompositionLocal for NavController
 val LocalNavController = staticCompositionLocalOf<NavController> { 
@@ -129,6 +130,10 @@ fun WalletApp(
                         navController = navController,
                         moduleId = moduleId
                     )
+                }
+                composable("miniapp/{appId}") { backStackEntry ->
+                    val appId = backStackEntry.arguments?.getString("appId") ?: ""
+                    MiniAppScreen(appId = appId)
                 }
             }
         }

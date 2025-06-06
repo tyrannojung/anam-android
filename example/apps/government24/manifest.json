@@ -1,0 +1,6 @@
+{
+  "app_id": "kr.go.government24",
+  "name": "정부24",
+  "version": "1.0.0",
+  "pages": ["pages/index/index", "pages/payment/payment"]
+}

@@ -32,8 +32,7 @@ fun Header(title: String? = null) {
             text = title ?: stringResource(R.string.header_title),
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp
+                fontWeight = FontWeight.Bold
             ),
             color = MaterialTheme.colorScheme.onBackground
         )

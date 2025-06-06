@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>이더리움 지갑</title>
+    <link rel="stylesheet" href="../../app.css" />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- 헤더 -->
+      <header class="header">
+        <div class="header-content">
+          <div class="logo">
+            <div class="eth-logo">Ξ</div>
+            <span class="logo-text">이더리움</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 잔액 카드 -->
+      <div class="card balance-card">
+        <div class="balance-header">
+          <span class="balance-label">이더리움 메인넷</span>
+        </div>
+        <div class="balance-amount">
+          <div class="eth-balance">
+            <span>2.5476</span>
+            <span class="eth-unit">ETH</span>
+          </div>
+          <div class="usd-balance">≈ $6,369.00</div>
+        </div>
+        
+        <!-- 주소 표시 -->
+        <div class="address-container">
+          <div class="address-label">Address</div>
+          <div class="address-display">
+            0x742d35Cc6634C0532925a3b844Bc9e7595f2bD5E
+          </div>
+        </div>
+        
+        <!-- 액션 버튼들 -->
+        <div class="action-buttons">
+          <button class="action-btn" onclick="console.log('Send page')">
+            <span>Send</span>
+          </button>
+          <button class="action-btn" onclick="console.log('Receive page')">
+            <span>Receive</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 최근 거래 -->
+      <section class="transactions-section">
+        <h2 class="section-title">최근 거래</h2>
+        <div class="tx-list">
+          <!-- 거래 1 -->
+          <div class="tx-item">
+            <div class="tx-icon send">↑</div>
+            <div class="tx-details">
+              <div class="tx-type">전송</div>
+              <div class="tx-address">0x4B20...3E8a</div>
+            </div>
+            <div class="tx-amount">
+              <div class="tx-eth send">-0.5 ETH</div>
+              <div class="tx-time">2시간 전</div>
+            </div>
+          </div>
+          
+          <!-- 거래 2 -->
+          <div class="tx-item">
+            <div class="tx-icon receive">↓</div>
+            <div class="tx-details">
+              <div class="tx-type">수신</div>
+              <div class="tx-address">0x9F8c...7D2e</div>
+            </div>
+            <div class="tx-amount">
+              <div class="tx-eth receive">+1.2 ETH</div>
+              <div class="tx-time">5시간 전</div>
+            </div>
+          </div>
+          
+          <!-- 거래 3 -->
+          <div class="tx-item">
+            <div class="tx-icon send">↑</div>
+            <div class="tx-details">
+              <div class="tx-type">스왑</div>
+              <div class="tx-address">Uniswap V3</div>
+            </div>
+            <div class="tx-amount">
+              <div class="tx-eth send">-0.8 ETH</div>
+              <div class="tx-time">1일 전</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="../../app.js"></script>
+    <script src="index.js"></script>
+  </body>
+</html>
