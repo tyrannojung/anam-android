@@ -110,7 +110,7 @@ fun WalletApp(
                     MainScreen()
                 }
                 composable("Identity") {
-                    com.anam.wallet.ui.screens.identity.IdentityScreen()
+                    com.anam.wallet.ui.screens.identity.IdentitySampleScreen()
                 }
                 composable("Hub") {
                     SimpleHubScreen()
@@ -134,6 +134,11 @@ fun WalletApp(
                 composable("miniapp/{appId}") { backStackEntry ->
                     val appId = backStackEntry.arguments?.getString("appId") ?: ""
                     MiniAppScreen(appId = appId)
+                }
+                composable("StudentCardDetail") {
+                    com.anam.wallet.ui.screens.identity.StudentCardDetailScreen(
+                        onBack = { navController.popBackStack() }
+                    )
                 }
             }
         }
