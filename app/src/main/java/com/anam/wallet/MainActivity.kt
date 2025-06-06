@@ -110,7 +110,7 @@ fun WalletApp(
                     MainScreen()
                 }
                 composable("Identity") {
-                    com.anam.wallet.ui.screens.identity.IdentitySampleScreen()
+                    com.anam.wallet.ui.screens.identity.IdentityScreen()
                 }
                 composable("Hub") {
                     SimpleHubScreen()

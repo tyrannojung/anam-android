@@ -259,31 +259,17 @@ private fun ModuleListScreen() {
     val navController = LocalNavController.current
     
     // 활성화된 블록체인 모듈 ID 상태
-    var activeBlockchainId by remember { mutableStateOf("btc") }
+    var activeBlockchainId by remember { mutableStateOf("eth") }
     
     // 샘플 설치된 모듈 데이터
     val installedBlockchainModules = remember {
         listOf(
-            InstalledModule(
-                id = "btc",
-                name = "Bitcoin",
-                iconRes = R.drawable.ic_blockchain_bitcoin,
-                primaryColor = Color(0xFFF7931A),
-                balance = "0.0234 BTC"
-            ),
             InstalledModule(
                 id = "eth",
                 name = "Ethereum",
                 iconRes = R.drawable.ic_blockchain_ethereum,
                 primaryColor = Color(0xFF627EEA),
                 balance = "1.5 ETH"
-            ),
-            InstalledModule(
-                id = "sui",
-                name = "Sui",
-                iconRes = R.drawable.ic_blockchain_sui,
-                primaryColor = Color(0xFF4DA2FF),
-                balance = "500 SUI"
             )
         )
     }
@@ -298,34 +284,6 @@ private fun ModuleListScreen() {
                 name = "정부24",
                 iconRes = R.drawable.ic_blockchain_gov,
                 primaryColor = Color(0xFF1976D2),
-                isApp = true
-            ),
-            InstalledModule(
-                id = "korea",
-                name = "고려대학교",
-                iconRes = R.drawable.ic_blockchain_korea,
-                primaryColor = Color(0xFF8B0029),
-                isApp = true
-            ),
-            InstalledModule(
-                id = "dong",
-                name = "동백전",
-                iconRes = R.drawable.ic_blockchain_dong,
-                primaryColor = Color(0xFFFF6B6B),
-                isApp = true
-            ),
-            InstalledModule(
-                id = "defi",
-                name = "DeFi Hub",
-                iconRes = R.drawable.ic_blockchain_defi,
-                primaryColor = Color(0xFF7B3FF2),
-                isApp = true
-            ),
-            InstalledModule(
-                id = "tmoney",
-                name = "T-money",
-                iconRes = R.drawable.ic_blockchain_tmoney,
-                primaryColor = Color(0xFF0052CC),
                 isApp = true
             )
         )

@@ -110,60 +110,6 @@ fun SimpleHubScreen() {
                 category = "공공서비스",
                 rating = 4.7f,
                 downloads = "100K+"
-            ),
-            ModuleItem(
-                id = "6",
-                name = "고려대학교",
-                description = "학사 정보와 캠퍼스 서비스를 한 곳에서 관리하세요",
-                iconRes = R.drawable.ic_blockchain_korea,
-                category = "교육",
-                rating = 4.5f,
-                downloads = "25K+"
-            ),
-            ModuleItem(
-                id = "7",
-                name = "부산 시민플랫폼",
-                description = "부산 시민을 위한 서비스를 이용하세요",
-                iconRes = R.drawable.ic_blockchain_busan,
-                category = "공공서비스",
-                rating = 4.4f,
-                downloads = "120K+"
-            ),
-            ModuleItem(
-                id = "8",
-                name = "동백전",
-                description = "부산시 지역화폐로 지역경제를 활성화하세요",
-                iconRes = R.drawable.ic_blockchain_dong,
-                category = "금융",
-                rating = 4.7f,
-                downloads = "300K+"
-            ),
-            ModuleItem(
-                id = "9",
-                name = "DeFi Hub",
-                description = "탈중앙 금융 서비스를 한 곳에서 관리하세요",
-                iconRes = R.drawable.ic_blockchain_defi,
-                category = "DeFi",
-                rating = 4.9f,
-                downloads = "80K+"
-            ),
-            ModuleItem(
-                id = "10",
-                name = "T-money",
-                description = "대중교통 이용과 결제를 스마트하게 관리하세요",
-                iconRes = R.drawable.ic_blockchain_tmoney,
-                category = "교통",
-                rating = 4.8f,
-                downloads = "500K+"
-            ),
-            ModuleItem(
-                id = "11",
-                name = "중앙선거관리위원회",
-                description = "공정하고 투명한 전자투표 시스템을 이용하세요",
-                iconRes = R.drawable.ic_blockchain_vote,
-                category = "공공서비스",
-                rating = 4.6f,
-                downloads = "75K+"
             )
         )
     }
@@ -279,11 +225,7 @@ fun SimpleHubScreen() {
                 ModuleCard(
                     module = module,
                     onClick = { 
-                        when (module.id) {
-                            "5", "6", "7", "8", "9", "10", "11" -> navController.navigate("miniapp/government24") // 앱 모듈들
-                            "2" -> navController.navigate("miniapp/ethereum") // Ethereum Wallet
-                            else -> navController.navigate("ModuleDetail/${module.id}")
-                        }
+                        navController.navigate("ModuleDetail/${module.id}")
                     }
                 )
             }
