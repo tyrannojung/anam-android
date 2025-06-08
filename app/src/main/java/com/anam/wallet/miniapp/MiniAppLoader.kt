@@ -51,9 +51,9 @@ class MiniAppLoader(private val context: Context) {
             
             // Check for versioned ZIP file first, then fallback to simple name
             val zipFileName = when (appId) {
-                "government24" -> "$MINI_APPS_DIR/${appId}_v1.0.0.zip"
-                "ethereum" -> "$appId.zip" // ethereum.zip is in root assets folder
-                else -> "$MINI_APPS_DIR/${appId}_v1.0.0.zip"
+                "government24" -> "apps/${appId}_v1.0.0.zip"
+                "ethereum" -> "blockchains/$appId.zip"
+                else -> "apps/${appId}_v1.0.0.zip"
             }
             
             val miniAppDir = File(context.filesDir, "$MINI_APPS_DIR/$appId")
