@@ -137,10 +137,16 @@ fun MiniAppWebView(
                 webChromeClient = MiniAppWebChromeClient()
                 
                 // Add JavaScript Bridge
-                addJavascriptInterface(
-                    MiniAppJavaScriptBridge(ctx, manifest),
-                    "anam"
+                // TODO: 결제 요청 콜백 처리를 위한 핸들러 추가 필요
+                val bridge = MiniAppJavaScriptBridge(
+                    context = ctx,
+                    manifest = manifest,
+                    onPaymentRequest = { paymentData ->
+                        // TODO: MiniAppManager를 통해 블록체인 WebView로 전달
+                        Log.d("MiniAppScreen", "Payment requested: $paymentData")
+                    }
                 )
+                addJavascriptInterface(bridge, "anam")
                 
                 // Load the first page
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
