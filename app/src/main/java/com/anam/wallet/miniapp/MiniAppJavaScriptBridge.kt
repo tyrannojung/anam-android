@@ -145,7 +145,7 @@ class MiniAppJavaScriptBridge(
                 put("status", "success")
                 put("data", JSONObject().apply {
                     put("credential", "mock_credential_data")
-                    put("issuer", "비단주머니")
+                    put("issuer", "AnamWallet")
                     put("subject", "user_did")
                 })
             }

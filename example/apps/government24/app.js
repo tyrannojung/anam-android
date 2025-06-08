@@ -1,4 +1,4 @@
-// 비단주머니 미니앱 JavaScript API
+// AnamWallet 미니앱 JavaScript API
 // W3C MiniApp 표준을 따르는 글로벌 API 객체
 
 // 미니앱 인스턴스
@@ -85,7 +85,7 @@ if (typeof anam === 'undefined') {
         status: 'success',
         data: {
           credential: 'mock_credential_data',
-          issuer: '비단주머니',
+          issuer: 'AnamWallet',
           subject: 'user_did'
         }
       };

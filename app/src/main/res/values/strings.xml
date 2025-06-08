@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">비단주머니</string>
+    <string name="app_name">AnamWallet</string>
 
     <!-- Header -->
-    <string name="header_title">비단주머니</string>
-    <string name="header_title_main">비단주머니</string>
+    <string name="header_title">AnamWallet</string>
+    <string name="header_title_main">AnamWallet</string>
     <string name="header_title_hub">허브</string>
     <string name="header_title_browser">웹뷰</string>
     <string name="header_title_identity">디지털 신분증</string>
@@ -31,7 +31,7 @@
     <string name="settings_faq_description">FAQ 확인하기</string>
     <string name="settings_about">정보</string>
     <string name="settings_app_info">앱 소개</string>
-    <string name="settings_app_info_description">비단주머니에 대해 알아보기</string>
+    <string name="settings_app_info_description">AnamWallet에 대해 알아보기</string>
     <string name="settings_license">라이선스</string>
     <string name="settings_license_description">오픈소스 라이선스 정보</string>
     

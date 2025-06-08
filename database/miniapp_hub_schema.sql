@@ -1,4 +1,4 @@
--- 비단주머니 미니앱 허브 데이터베이스 스키마
+-- AnamWallet 미니앱 허브 데이터베이스 스키마
 -- PostgreSQL 14+ 권장
 
 -- 확장 기능 활성화
@@ -261,7 +261,7 @@ INSERT INTO app_modules (
     '정부24',
     '대한민국 정부 민원 서비스',
     '주민등록등본, 가족관계증명서 등 각종 민원 서류를 간편하게 발급받을 수 있습니다. DID 기반 인증으로 안전하고 빠른 서비스를 제공합니다.',
-    'https://hub.bidanjumeoni.com/icons/government24.png',
+    'https://hub.anamwallet.com/icons/government24.png',
     '#1976D2',
     '1.0.0',
     'published'
