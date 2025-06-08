@@ -277,6 +277,78 @@ function resetWallet() {
   }
 }
 
+// 결제 요청 수신 리스너
+window.addEventListener('paymentRequest', async (event) => {
+  console.log('Payment request received:', event.detail);
+  
+  try {
+    const { to, amount, data, callbackId } = event.detail;
+    
+    // 지갑 정보 확인
+    const walletData = localStorage.getItem('ethereum_wallet');
+    if (!walletData) {
+      throw new Error('No wallet found');
+    }
+    
+    const walletInfo = JSON.parse(walletData);
+    
+    // 개인키 복호화 (실제로는 더 안전한 방법 필요)
+    const privateKey = atob(walletInfo.encryptedPrivateKey);
+    
+    // Provider가 있는지 확인
+    if (!provider) {
+      throw new Error('No provider connected');
+    }
+    
+    // 지갑 복구
+    const wallet = new ethers.Wallet(privateKey, provider);
+    
+    // 잔액 확인
+    const balance = await wallet.getBalance();
+    const requiredAmount = ethers.utils.parseEther(amount);
+    
+    if (balance.lt(requiredAmount)) {
+      throw new Error('Insufficient balance');
+    }
+    
+    showToast(`결제 처리 중: ${amount} ETH`);
+    
+    // 트랜잭션 생성 및 전송
+    const tx = await wallet.sendTransaction({
+      to: to,
+      value: requiredAmount,
+      data: data || '0x'
+    });
+    
+    console.log('Transaction sent:', tx.hash);
+    showToast(`트랜잭션 전송됨: ${tx.hash.slice(0, 10)}...`);
+    
+    // 결과 전송
+    window.parent.postMessage({
+      type: 'paymentResponse',
+      callbackId: callbackId,
+      result: {
+        txHash: tx.hash,
+        from: wallet.address,
+        to: to,
+        amount: amount,
+        chainId: (await provider.getNetwork()).chainId
+      }
+    }, '*');
+    
+  } catch (error) {
+    console.error('Payment failed:', error);
+    showToast(`결제 실패: ${error.message}`);
+    
+    // 에러 전송
+    window.parent.postMessage({
+      type: 'paymentResponse',
+      callbackId: event.detail.callbackId,
+      error: error.message
+    }, '*');
+  }
+});
+
 // 전역 함수로 등록 (HTML에서 호출 가능하도록)
 window.createWallet = createWallet;
 window.showToast = showToast;

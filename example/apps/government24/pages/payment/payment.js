@@ -28,28 +28,42 @@ function selectPaymentMethod(method) {
 function processPayment() {
     console.log(`${selectedMethod}으로 결제 처리 시작`);
     
-    let paymentInfo = '';
-    
-    switch(selectedMethod) {
-        case 'blockchain':
-            paymentInfo = 'Ethereum 0.00000001 ETH로 결제를 진행합니다';
-            break;
-        case 'phone':
-            paymentInfo = '핸드폰 소액결제로 400원을 결제합니다';
-            break;
-        case 'card':
-            paymentInfo = '신용카드로 400원을 결제합니다';
-            break;
-    }
-    
-    // 토스트 메시지 표시
-    if (window.anam && window.anam.showToast) {
-        window.anam.showToast(paymentInfo);
+    if (selectedMethod === 'blockchain') {
+        // 블록체인 결제 처리
+        const paymentData = {
+            to: '0x8091C2fD8a79a9EF812d487052496243f6825B02', // 정부24 수신 주소
+            amount: '0.00000001', // ETH
+            data: 'Government24 Service Payment'
+        };
+        
+        console.log('결제 요청:', paymentData);
+        
+        // JavaScript Bridge를 통해 결제 요청
+        if (window.anam && window.anam.requestPayment) {
+            window.anam.requestPayment(
+                JSON.stringify(paymentData),
+                'handlePaymentResponse' // 콜백 함수명
+            );
+        } else {
+            alert('결제 기능을 사용할 수 없습니다.');
+        }
     } else {
-        alert(paymentInfo);
+        // 다른 결제 수단은 아직 미구현
+        alert(`${selectedMethod} 결제는 아직 구현되지 않았습니다.`);
     }
-    
-    // 실제 결제 로직은 여기에 구현
-    // 블록체인 결제의 경우 이더리움 모듈과 연동
-    // 핸드폰/카드 결제의 경우 각각의 결제 모듈과 연동
 }
+
+// 결제 응답 처리
+function handlePaymentResponse(response) {
+    console.log('결제 응답:', response);
+    
+    if (response.error) {
+        alert('결제 실패: ' + response.error);
+    } else if (response.txHash) {
+        alert('결제 성공!\n트랜잭션 해시: ' + response.txHash);
+        // 성공 페이지로 이동 또는 상태 업데이트
+    }
+}
+
+// 전역 함수로 등록
+window.handlePaymentResponse = handlePaymentResponse;
