@@ -36,6 +36,9 @@ import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
+import com.anam.wallet.miniapp.MiniAppManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen() {
@@ -257,15 +260,25 @@ private fun InstallStep(
 private fun ModuleListScreen() {
     val scrollState = rememberScrollState()
     val navController = LocalNavController.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val miniAppManager = remember { MiniAppManager.getInstance(context) }
     
     // 활성화된 블록체인 모듈 ID 상태
-    var activeBlockchainId by remember { mutableStateOf("eth") }
+    var activeBlockchainId by remember { mutableStateOf("ethereum") }
+    
+    // 초기 블록체인 활성화
+    LaunchedEffect(activeBlockchainId) {
+        scope.launch {
+            miniAppManager.activateBlockchain(activeBlockchainId)
+        }
+    }
     
     // 샘플 설치된 모듈 데이터
     val installedBlockchainModules = remember {
         listOf(
             InstalledModule(
-                id = "eth",
+                id = "ethereum",
                 name = "Ethereum",
                 iconRes = R.drawable.ic_blockchain_ethereum,
                 primaryColor = Color(0xFF627EEA),
@@ -305,6 +318,7 @@ private fun ModuleListScreen() {
             },
             onModuleClick = { module ->
                 // 모든 블록체인 모듈 클릭 시 ethereum 미니앱 실행
+                android.util.Log.d("MainScreen", "Blockchain module clicked: ${module.id}")
                 navController.navigate("miniapp/ethereum")
             }
         )
@@ -316,7 +330,8 @@ private fun ModuleListScreen() {
             title = stringResource(R.string.main_section_apps),
             modules = installedAppModules,
             onModuleClick = { module ->
-                // 모든 앱 모듈은 정부24로 연결
+                // 직접 navigate - MiniAppScreen에서 처리
+                android.util.Log.d("MainScreen", "App module clicked: ${module.id}")
                 navController.navigate("miniapp/government24")
             }
         )

@@ -279,10 +279,10 @@ function resetWallet() {
 
 // 결제 요청 수신 리스너
 window.addEventListener('paymentRequest', async (event) => {
-  console.log('Payment request received:', event.detail);
+  console.log('Payment request received:', JSON.stringify(event.detail, null, 2));
   
   try {
-    const { to, amount, data, callbackId } = event.detail;
+    const { to, amount, data, requestId } = event.detail;
     
     // 지갑 정보 확인
     const walletData = localStorage.getItem('ethereum_wallet');
@@ -323,29 +323,37 @@ window.addEventListener('paymentRequest', async (event) => {
     console.log('Transaction sent:', tx.hash);
     showToast(`트랜잭션 전송됨: ${tx.hash.slice(0, 10)}...`);
     
-    // 결과 전송
-    window.parent.postMessage({
-      type: 'paymentResponse',
-      callbackId: callbackId,
-      result: {
-        txHash: tx.hash,
-        from: wallet.address,
-        to: to,
-        amount: amount,
-        chainId: (await provider.getNetwork()).chainId
-      }
-    }, '*');
+    // 결과를 Bridge를 통해 전송
+    const responseData = {
+      txHash: tx.hash,
+      from: wallet.address,
+      to: to,
+      amount: amount,
+      chainId: (await provider.getNetwork()).chainId
+    };
+    
+    // Bridge API를 통해 응답 전송
+    if (window.anam && window.anam.sendPaymentResponse) {
+      window.anam.sendPaymentResponse(requestId, JSON.stringify(responseData));
+    }
+    
+    console.log('Payment success response:', JSON.stringify(responseData, null, 2));
     
   } catch (error) {
     console.error('Payment failed:', error);
     showToast(`결제 실패: ${error.message}`);
     
-    // 에러 전송
-    window.parent.postMessage({
-      type: 'paymentResponse',
-      callbackId: event.detail.callbackId,
+    // 에러 응답
+    const errorResponse = {
       error: error.message
-    }, '*');
+    };
+    
+    // Bridge API를 통해 에러 응답 전송
+    if (window.anam && window.anam.sendPaymentResponse) {
+      window.anam.sendPaymentResponse(event.detail.requestId, JSON.stringify(errorResponse));
+    }
+    
+    console.log('Payment error response:', JSON.stringify(errorResponse, null, 2));
   }
 });
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.anam.wallet.miniapp.MiniAppJavaScriptBridge
 import com.anam.wallet.miniapp.MiniAppLoader
 import com.anam.wallet.miniapp.MiniAppManifest
+import com.anam.wallet.miniapp.MiniAppManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,17 +43,30 @@ fun MiniAppScreen(
 ) {
     val context = LocalContext.current
     val navController = LocalNavController.current
+    val miniAppManager = remember { MiniAppManager.getInstance(context) }
     var manifest by remember { mutableStateOf<MiniAppManifest?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var isUsingManager by remember { mutableStateOf(false) }
     
     DisposableEffect(appId) {
         val loader = MiniAppLoader(context)
         manifest = loader.loadMiniApp(appId)
         
+        android.util.Log.d("MiniAppScreen", "Loading miniapp: $appId")
+        
+        // For government24, always use MiniAppManager to enable payment handling
+        if (appId == "government24") {
+            isUsingManager = true
+            android.util.Log.d("MiniAppScreen", "Using MiniAppManager for $appId")
+        }
+        
         onDispose {
-            // Trigger onHide lifecycle event before destroying
-            webView?.evaluateJavascript("if(typeof App !== 'undefined' && App.onHide) App.onHide();", null)
-            webView?.destroy()
+            // Only destroy if we created it (not from MiniAppManager)
+            if (!isUsingManager) {
+                // Trigger onHide lifecycle event before destroying
+                webView?.evaluateJavascript("if(typeof App !== 'undefined' && App.onHide) App.onHide();", null)
+                webView?.destroy()
+            }
         }
     }
     
@@ -87,10 +102,28 @@ fun MiniAppScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            manifest?.let { miniApp ->
+            if (isUsingManager && manifest != null) {
+                // Use MiniAppManager for government24
+                LaunchedEffect(appId) {
+                    android.util.Log.d("MiniAppScreen", "Activating app via MiniAppManager: $appId")
+                    val createdWebView = miniAppManager.activateApp(appId)
+                    webView = createdWebView
+                    android.util.Log.d("MiniAppScreen", "WebView created: ${webView != null}")
+                }
+                
+                webView?.let { wv ->
+                    android.util.Log.d("MiniAppScreen", "Rendering WebView for $appId")
+                    AndroidView(
+                        factory = { _ -> wv },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            } else if (manifest != null) {
+                // Create new WebView for other apps
+                android.util.Log.d("MiniAppScreen", "Creating new WebView for $appId")
                 MiniAppWebView(
                     appId = appId,
-                    manifest = miniApp,
+                    manifest = manifest!!,
                     onWebViewCreated = { webView = it }
                 )
             }
@@ -137,14 +170,11 @@ fun MiniAppWebView(
                 webChromeClient = MiniAppWebChromeClient()
                 
                 // Add JavaScript Bridge
-                // TODO: 결제 요청 콜백 처리를 위한 핸들러 추가 필요
+                // JavaScript Bridge 추가
                 val bridge = MiniAppJavaScriptBridge(
                     context = ctx,
                     manifest = manifest,
-                    onPaymentRequest = { paymentData ->
-                        // TODO: MiniAppManager를 통해 블록체인 WebView로 전달
-                        Log.d("MiniAppScreen", "Payment requested: $paymentData")
-                    }
+                    onPaymentRequest = null // MiniAppManager에서 처리
                 )
                 addJavascriptInterface(bridge, "anam")
                 

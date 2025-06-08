@@ -33,19 +33,20 @@ function processPayment() {
         const paymentData = {
             to: '0x8091C2fD8a79a9EF812d487052496243f6825B02', // 정부24 수신 주소
             amount: '0.00000001', // ETH
-            data: 'Government24 Service Payment'
+            data: '0x' // 빈 데이터 (16진수 형식)
         };
         
-        console.log('결제 요청:', paymentData);
+        console.log('결제 요청:', JSON.stringify(paymentData, null, 2));
+        
+        // 결제 응답 이벤트 리스너 등록
+        window.addEventListener('paymentResponse', handlePaymentResponse, { once: true });
         
         // JavaScript Bridge를 통해 결제 요청
         if (window.anam && window.anam.requestPayment) {
-            window.anam.requestPayment(
-                JSON.stringify(paymentData),
-                'handlePaymentResponse' // 콜백 함수명
-            );
+            window.anam.requestPayment(JSON.stringify(paymentData));
         } else {
             alert('결제 기능을 사용할 수 없습니다.');
+            window.removeEventListener('paymentResponse', handlePaymentResponse);
         }
     } else {
         // 다른 결제 수단은 아직 미구현
@@ -54,16 +55,21 @@ function processPayment() {
 }
 
 // 결제 응답 처리
-function handlePaymentResponse(response) {
-    console.log('결제 응답:', response);
+function handlePaymentResponse(event) {
+    console.log('결제 응답:', JSON.stringify(event.detail, null, 2));
+    
+    const response = event.detail;
     
     if (response.error) {
         alert('결제 실패: ' + response.error);
     } else if (response.txHash) {
-        alert('결제 성공!\n트랜잭션 해시: ' + response.txHash);
-        // 성공 페이지로 이동 또는 상태 업데이트
+        // 성공 페이지로 이동
+        const params = new URLSearchParams({
+            txHash: response.txHash,
+            amount: response.amount || '0.00000001',
+            chainId: response.chainId || '11155111'
+        });
+        
+        window.location.href = '../success/success.html?' + params.toString();
     }
 }
-
-// 전역 함수로 등록
-window.handlePaymentResponse = handlePaymentResponse;
