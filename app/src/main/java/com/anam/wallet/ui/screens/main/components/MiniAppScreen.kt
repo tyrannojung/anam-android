@@ -1,4 +1,4 @@
-package com.anam.wallet.ui.screens.miniapp
+package com.anam.wallet.ui.screens.main.components
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -55,7 +55,7 @@ fun MiniAppScreen(
         android.util.Log.d("MiniAppScreen", "Loading miniapp: $appId")
         
         // For government24, always use MiniAppManager to enable payment handling
-        if (appId == "government24") {
+        if (appId == "kr.go.government24") {
             isUsingManager = true
             android.util.Log.d("MiniAppScreen", "Using MiniAppManager for $appId")
         }
@@ -75,11 +75,7 @@ fun MiniAppScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = when (appId) {
-                            "government24" -> "앱 모듈"
-                            "ethereum" -> "블록체인 모듈"
-                            else -> manifest?.name ?: "Mini App"
-                        },
+                        text = manifest?.name ?: "Mini App",
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
@@ -181,6 +177,11 @@ fun MiniAppWebView(
                 // Load the first page
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
                 val url = "$basePath${firstPage}.html"
+                
+                android.util.Log.d("MiniAppWebView", "Loading URL: $url")
+                android.util.Log.d("MiniAppWebView", "Base path: $basePath")
+                android.util.Log.d("MiniAppWebView", "First page: $firstPage")
+                
                 loadUrl(url)
                 
                 onWebViewCreated(this)

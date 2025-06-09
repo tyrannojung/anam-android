@@ -30,9 +30,9 @@ import com.anam.wallet.ui.screens.main.MainScreen
 import com.anam.wallet.ui.screens.settings.SettingsScreen
 import com.anam.wallet.ui.screens.settings.ThemeViewModel
 import com.anam.wallet.ui.screens.settings.LocaleViewModel
-import com.anam.wallet.ui.screens.moduledetail.ModuleDetailScreen
+import com.anam.wallet.ui.screens.hub.components.ModuleDetailScreen
 import com.anam.wallet.ui.theme.AnamwalletTheme
-import com.anam.wallet.ui.screens.miniapp.MiniAppScreen
+import com.anam.wallet.ui.screens.main.components.MiniAppScreen
 
 // Create a CompositionLocal for NavController
 val LocalNavController = staticCompositionLocalOf<NavController> { 

@@ -1,5 +1,7 @@
 {
-  "app_id": "ethereum",
-  "name": "이더리움 지갑",
-  "version": "1.0.0"
+  "app_id": "com.anam.ethereum",
+  "type": "blockchain",
+  "name": "ethereum",
+  "version": "1.0.0",
+  "icon": "assets/icons/app_icon.png"
 }

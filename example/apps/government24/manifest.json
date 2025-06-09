@@ -1,5 +1,7 @@
 {
   "app_id": "kr.go.government24",
+  "type": "app",
   "name": "정부24",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "icon": "assets/icons/app_icon.png"
 }

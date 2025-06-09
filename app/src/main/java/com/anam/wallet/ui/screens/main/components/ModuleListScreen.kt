@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -31,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
 import com.anam.wallet.miniapp.MiniAppManager
+import com.anam.wallet.miniapp.MiniAppScanner
+import com.anam.wallet.miniapp.ScannedMiniApp
 import kotlinx.coroutines.launch
 
 @Composable
@@ -40,106 +43,136 @@ fun ModuleListScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val miniAppManager = remember { MiniAppManager.getInstance(context) }
+    val miniAppScanner = remember { MiniAppScanner(context) }
+    
+    // 스캔된 미니앱 상태
+    var scannedApps by remember { mutableStateOf<List<ScannedMiniApp>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
     
     // 활성화된 블록체인 모듈 ID 상태
-    var activeBlockchainId by remember { mutableStateOf("ethereum") }
+    var activeBlockchainId by remember { mutableStateOf<String?>(null) }
     
-    // 초기 블록체인 활성화
-    LaunchedEffect(activeBlockchainId) {
+    // 미니앱 스캔
+    LaunchedEffect(Unit) {
         scope.launch {
-            miniAppManager.activateBlockchain(activeBlockchainId)
+            try {
+                isLoading = true
+                // 캐시 클리어 (디버깅용)
+                miniAppScanner.clearCache()
+                
+                android.util.Log.d("ModuleListScreen", "Starting mini app scan...")
+                scannedApps = miniAppScanner.scanInstalledApps()
+                android.util.Log.d("ModuleListScreen", "Scanned ${scannedApps.size} apps")
+                
+                // 첫 번째 블록체인 모듈을 기본 활성화
+                val firstBlockchain = scannedApps.firstOrNull { it.type == "blockchain" }
+                firstBlockchain?.let {
+                    android.util.Log.d("ModuleListScreen", "Activating blockchain: ${it.appId}")
+                    activeBlockchainId = it.appId
+                    miniAppManager.activateBlockchain(it.appId)
+                }
+                
+                isLoading = false
+            } catch (e: Exception) {
+                android.util.Log.e("ModuleListScreen", "Error scanning apps", e)
+                isLoading = false
+            }
         }
     }
     
-    // 샘플 설치된 모듈 데이터
-    val installedBlockchainModules = remember {
-        listOf(
-            InstalledModule(
-                id = "ethereum",
-                name = "Ethereum",
-                iconRes = R.drawable.ic_blockchain_ethereum,
-                primaryColor = Color(0xFF627EEA),
-                balance = "1.5 ETH"
-            )
-        )
+    // 블록체인 활성화 변경 시
+    LaunchedEffect(activeBlockchainId) {
+        activeBlockchainId?.let { blockchainId ->
+            scope.launch {
+                miniAppManager.activateBlockchain(blockchainId)
+            }
+        }
     }
     
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-    
-    val installedAppModules = remember {
-        listOf(
-            InstalledModule(
-                id = "gov24",
-                name = "정부24",
-                iconRes = R.drawable.ic_blockchain_gov,
-                primaryColor = Color(0xFF1976D2),
-                isApp = true
-            )
-        )
+    // 타입별로 분류
+    val blockchainModules = remember(scannedApps) {
+        scannedApps.filter { it.type == "blockchain" }
     }
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(scrollState)
-    ) {
-        // 블록체인 섹션
-        BlockchainModuleSection(
-            title = stringResource(R.string.main_section_blockchain),
-            modules = installedBlockchainModules,
-            activeModuleId = activeBlockchainId,
-            onActivateModule = { moduleId ->
-                activeBlockchainId = moduleId
-            },
-            onModuleClick = { module ->
-                // 모든 블록체인 모듈 클릭 시 ethereum 미니앱 실행
-                android.util.Log.d("MainScreen", "Blockchain module clicked: ${module.id}")
-                navController.navigate("miniapp/ethereum")
-            }
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // 앱 섹션
-        ModuleSection(
-            title = stringResource(R.string.main_section_apps),
-            modules = installedAppModules,
-            onModuleClick = { module ->
-                // 직접 navigate - MiniAppScreen에서 처리
-                android.util.Log.d("MainScreen", "App module clicked: ${module.id}")
-                navController.navigate("miniapp/government24")
-            }
-        )
-        
-        // 더 추가하기 버튼
+    val appModules = remember(scannedApps) {
+        scannedApps.filter { it.type == "app" }
+    }
+    
+    if (isLoading) {
+        // 로딩 상태
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
         ) {
-            AddMoreCard(
-                onClick = { 
-                    navController.navigate("Hub") {
-                        popUpTo(navController.graph.startDestinationId)
-                        launchSingleTop = true
-                    }
-                }
-            )
+            CircularProgressIndicator()
         }
-        
-        Spacer(modifier = Modifier.height(80.dp)) // Bottom navigation 공간
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(scrollState)
+        ) {
+            // 블록체인 섹션
+            if (blockchainModules.isNotEmpty()) {
+                BlockchainModuleSection(
+                    title = stringResource(R.string.main_section_blockchain),
+                    modules = blockchainModules,
+                    activeModuleId = activeBlockchainId,
+                    onActivateModule = { moduleId ->
+                        activeBlockchainId = moduleId
+                    },
+                    onModuleClick = { module ->
+                        android.util.Log.d("ModuleListScreen", "Blockchain module clicked: ${module.appId}")
+                        navController.navigate("miniapp/${module.appId}")
+                    }
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            
+            // 앱 섹션
+            if (appModules.isNotEmpty()) {
+                AppModuleSection(
+                    title = stringResource(R.string.main_section_apps),
+                    modules = appModules,
+                    onModuleClick = { module ->
+                        android.util.Log.d("ModuleListScreen", "App module clicked: ${module.appId}")
+                        navController.navigate("miniapp/${module.appId}")
+                    }
+                )
+            }
+            
+            // 더 추가하기 버튼
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                AddMoreCard(
+                    onClick = { 
+                        navController.navigate("Hub") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(80.dp)) // Bottom navigation 공간
+        }
     }
 }
 
 @Composable
 private fun BlockchainModuleSection(
     title: String,
-    modules: List<InstalledModule>,
-    activeModuleId: String,
+    modules: List<ScannedMiniApp>,
+    activeModuleId: String?,
     onActivateModule: (String) -> Unit,
-    onModuleClick: (InstalledModule) -> Unit
+    onModuleClick: (ScannedMiniApp) -> Unit
 ) {
     Column {
         Text(
@@ -159,8 +192,8 @@ private fun BlockchainModuleSection(
             items(modules.size) { index ->
                 BlockchainModuleCard(
                     module = modules[index],
-                    isActive = modules[index].id == activeModuleId,
-                    onActivate = { onActivateModule(modules[index].id) },
+                    isActive = modules[index].appId == activeModuleId,
+                    onActivate = { onActivateModule(modules[index].appId) },
                     onClick = { onModuleClick(modules[index]) }
                 )
             }
@@ -169,10 +202,10 @@ private fun BlockchainModuleSection(
 }
 
 @Composable
-private fun ModuleSection(
+private fun AppModuleSection(
     title: String,
-    modules: List<InstalledModule>,
-    onModuleClick: (InstalledModule) -> Unit
+    modules: List<ScannedMiniApp>,
+    onModuleClick: (ScannedMiniApp) -> Unit
 ) {
     Column {
         Text(
@@ -218,7 +251,7 @@ private fun ModuleSection(
 
 @Composable
 private fun BlockchainModuleCard(
-    module: InstalledModule,
+    module: ScannedMiniApp,
     isActive: Boolean,
     onActivate: () -> Unit,
     onClick: () -> Unit
@@ -287,11 +320,20 @@ private fun BlockchainModuleCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = module.iconRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    // 동적 아이콘 로드 시도, 실패시 폴백 아이콘 사용
+                    if (module.iconBitmap != null) {
+                        Image(
+                            bitmap = module.iconBitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    } else if (module.fallbackIconRes != null) {
+                        Image(
+                            painter = painterResource(id = module.fallbackIconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
                 
                 // 활성화 상태 표시
@@ -380,7 +422,7 @@ private fun BlockchainModuleCard(
 
 @Composable
 private fun MiniAppCard(
-    module: InstalledModule,
+    module: ScannedMiniApp,
     onClick: () -> Unit
 ) {
     val animatedScale by animateFloatAsState(
@@ -392,59 +434,66 @@ private fun MiniAppCard(
         label = "scale"
     )
     
-    if (module.isApp == true) {
-        // 앱 모듈 - 작은 정사각형 카드
-        Card(
+    // 앱 모듈 - 작은 정사각형 카드
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .scale(animatedScale)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp
+        )
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .scale(animatedScale)
-                .clickable { onClick() },
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp,
-                pressedElevation = 8.dp
-            )
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
+            // 아이콘
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        module.primaryColor.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                // 아이콘
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            module.primaryColor.copy(alpha = 0.1f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                // 동적 아이콘 로드 시도, 실패시 폴백 아이콘 사용
+                if (module.iconBitmap != null) {
                     Image(
-                        painter = painterResource(id = module.iconRes),
+                        bitmap = module.iconBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
+                } else if (module.fallbackIconRes != null) {
+                    Image(
+                        painter = painterResource(id = module.fallbackIconRes),
                         contentDescription = null,
                         modifier = Modifier.size(32.dp)
                     )
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // 앱 이름
-                Text(
-                    text = module.name,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
-                )
             }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // 앱 이름
+            Text(
+                text = module.name,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
         }
     }
 }
@@ -491,14 +540,3 @@ private fun AddMoreCard(
         }
     }
 }
-
-// 설치된 모듈 데이터 클래스
-data class InstalledModule(
-    val id: String,
-    val name: String,
-    val iconRes: Int,
-    val primaryColor: Color,
-    val balance: String? = null,
-    val subtitle: String? = null,
-    val isApp: Boolean = false
-)

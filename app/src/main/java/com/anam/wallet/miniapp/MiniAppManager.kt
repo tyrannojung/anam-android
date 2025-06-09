@@ -75,10 +75,14 @@ class MiniAppManager private constructor(private val context: Context) {
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // 메인 페이지 로드
-                val basePath = File(context.filesDir, "miniapps/$blockchainId").toURI().toString()
+                // 메인 페이지 로드 - MiniAppLoader의 경로 사용
+                val loader = MiniAppLoader(context)
+                val basePath = loader.getMiniAppBasePath(blockchainId)
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                loadUrl("$basePath${firstPage}.html")
+                val url = "$basePath${firstPage}.html"
+                
+                Log.d(TAG, "Loading blockchain URL: $url")
+                loadUrl(url)
             }
             
             activeBlockchainId = blockchainId
@@ -124,10 +128,14 @@ class MiniAppManager private constructor(private val context: Context) {
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // 메인 페이지 로드
-                val basePath = File(context.filesDir, "miniapps/$appId").toURI().toString()
+                // 메인 페이지 로드 - MiniAppLoader의 경로 사용
+                val loader = MiniAppLoader(context)
+                val basePath = loader.getMiniAppBasePath(appId)
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                loadUrl("$basePath${firstPage}.html")
+                val url = "$basePath${firstPage}.html"
+                
+                Log.d(TAG, "Loading app URL: $url")
+                loadUrl(url)
             }
             
             activeAppId = appId

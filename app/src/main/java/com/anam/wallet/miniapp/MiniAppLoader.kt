@@ -9,10 +9,12 @@ import java.util.zip.ZipInputStream
 
 data class MiniAppManifest(
     val appId: String,
+    val type: String,
     val name: String,
     val version: String,
+    val icon: String? = null,
     val description: String? = null,
-    val pages: List<String>,
+    val pages: List<String> = emptyList(),
     val window: WindowConfig? = null,
     val permissions: List<String> = emptyList()
 )
@@ -49,12 +51,16 @@ class MiniAppLoader(private val context: Context) {
         try {
             val assetManager = context.assets
             
-            // Check for versioned ZIP file first, then fallback to simple name
-            val zipFileName = when (appId) {
-                "government24" -> "apps/${appId}_v1.0.0.zip"
-                "ethereum" -> "blockchains/$appId.zip"
-                else -> "apps/${appId}_v1.0.0.zip"
+            // 통합된 miniapps 폴더에서 ZIP 파일 찾기
+            val miniappFiles = assetManager.list("miniapps") ?: emptyArray()
+            val zipFileName = miniappFiles.find { it.startsWith("${appId}_") && it.endsWith(".zip") }
+            
+            if (zipFileName == null) {
+                Log.e(TAG, "No ZIP file found for appId: $appId in miniapps folder")
+                return null
             }
+            
+            val zipPath = "miniapps/$zipFileName"
             
             val miniAppDir = File(context.filesDir, "$MINI_APPS_DIR/$appId")
             
@@ -66,7 +72,7 @@ class MiniAppLoader(private val context: Context) {
             // Extract ZIP file
             miniAppDir.mkdirs()
             
-            assetManager.open(zipFileName).use { inputStream ->
+            assetManager.open(zipPath).use { inputStream ->
                 ZipInputStream(inputStream).use { zipInputStream ->
                     var entry = zipInputStream.nextEntry
                     while (entry != null) {
@@ -96,7 +102,18 @@ class MiniAppLoader(private val context: Context) {
 
     private fun loadManifest(miniAppDir: File): MiniAppManifest? {
         return try {
-            val manifestFile = File(miniAppDir, MANIFEST_FILE)
+            var manifestFile = File(miniAppDir, MANIFEST_FILE)
+            
+            // Check if manifest is in a subdirectory (legacy structure)
+            if (!manifestFile.exists()) {
+                val subDirs = miniAppDir.listFiles { it.isDirectory }
+                if (subDirs != null && subDirs.isNotEmpty()) {
+                    val subDir = subDirs[0]
+                    manifestFile = File(subDir, MANIFEST_FILE)
+                    Log.d(TAG, "Checking subdirectory for manifest: ${manifestFile.absolutePath}")
+                }
+            }
+            
             if (!manifestFile.exists()) {
                 Log.e(TAG, "Manifest file not found: ${manifestFile.absolutePath}")
                 return null
@@ -105,11 +122,16 @@ class MiniAppLoader(private val context: Context) {
             val manifestJson = manifestFile.readText()
             val json = JSONObject(manifestJson)
             
-            // Parse pages array
-            val pagesArray = json.getJSONArray("pages")
-            val pages = mutableListOf<String>()
-            for (i in 0 until pagesArray.length()) {
-                pages.add(pagesArray.getString(i))
+            // Parse pages array (optional)
+            val pages = if (json.has("pages")) {
+                val pagesArray = json.getJSONArray("pages")
+                val pagesList = mutableListOf<String>()
+                for (i in 0 until pagesArray.length()) {
+                    pagesList.add(pagesArray.getString(i))
+                }
+                pagesList
+            } else {
+                emptyList()
             }
             
             // Parse window config if exists
@@ -135,8 +157,10 @@ class MiniAppLoader(private val context: Context) {
             
             MiniAppManifest(
                 appId = json.getString("app_id"),
+                type = json.optString("type", "app"),
                 name = json.getString("name"),
                 version = json.getString("version"),
+                icon = json.optString("icon"),
                 description = json.optString("description"),
                 pages = pages,
                 window = windowConfig,
@@ -149,6 +173,30 @@ class MiniAppLoader(private val context: Context) {
     }
     
     fun getMiniAppBasePath(appId: String): String {
-        return "file://${context.filesDir.absolutePath}/$MINI_APPS_DIR/$appId/"
+        val miniAppDir = File(context.filesDir, "$MINI_APPS_DIR/$appId")
+        
+        // Check if files are in a subdirectory
+        val manifestFile = File(miniAppDir, MANIFEST_FILE)
+        if (!manifestFile.exists()) {
+            val subDirs = miniAppDir.listFiles { it.isDirectory }
+            if (subDirs != null && subDirs.isNotEmpty()) {
+                return "file://${subDirs[0].absolutePath}/"
+            }
+        }
+        
+        return "file://${miniAppDir.absolutePath}/"
+    }
+    
+    fun getMiniAppIconPath(appId: String, iconPath: String?): String? {
+        if (iconPath == null) return null
+        
+        val miniAppDir = File(context.filesDir, "$MINI_APPS_DIR/$appId")
+        val iconFile = File(miniAppDir, iconPath)
+        
+        return if (iconFile.exists()) {
+            iconFile.absolutePath
+        } else {
+            null
+        }
     }
 }

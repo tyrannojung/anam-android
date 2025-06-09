@@ -1,4 +1,4 @@
-package com.anam.wallet.ui.screens.moduledetail
+package com.anam.wallet.ui.screens.hub.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -441,22 +441,3 @@ private fun DescriptionSection(description: String) {
         }
     }
 }
-
-// 데이터 클래스들
-data class ModuleDetailData(
-    val id: String,
-    val name: String,
-    val description: String,
-    val longDescription: String,
-    val category: String,
-    val developer: String,
-    val version: String,
-    val size: String,
-    val downloads: String,
-    val rating: Float,
-    val totalRatings: Int,
-    val lastUpdated: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val primaryColor: Color,
-    val screenshots: List<String>
-)
