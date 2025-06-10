@@ -43,7 +43,7 @@ class MiniAppScanner(
                 return@withContext emptyList()
             }
             
-            val appFolders = miniappsDir.listFiles { file -> file.isDirectory } ?: emptyArray()
+            val appFolders = miniappsDir.listFiles { file: File -> file.isDirectory } ?: emptyArray()
             Log.d(TAG, "Found ${appFolders.size} installed mini apps")
             
             val scannedApps = appFolders.mapNotNull { appFolder ->
@@ -115,7 +115,7 @@ class MiniAppScanner(
             
             // Check if icon is in a subdirectory (legacy structure)
             if (!iconFile.exists()) {
-                val subDirs = miniAppDir.listFiles { it.isDirectory }
+                val subDirs = miniAppDir.listFiles { file: File -> file.isDirectory }
                 if (subDirs != null && subDirs.isNotEmpty()) {
                     iconFile = File(subDirs[0], iconPath)
                     Log.d(TAG, "Checking subdirectory for icon: ${iconFile.absolutePath}")
