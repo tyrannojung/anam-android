@@ -13,7 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.anam.wallet.miniapp.MiniAppInitializer
-import com.anam.wallet.ui.screens.splash.SplashScreen
+import com.anam.wallet.ui.components.SplashScreen
 import com.anam.wallet.ui.theme.AnamwalletTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,7 +43,10 @@ class SplashActivity : ComponentActivity() {
                 )
                 
                 // Run initialization in background
+                // 한번만 실행 Uint 사용
+                // 리컴포지션이 일어나도 재 실행 x
                 LaunchedEffect(Unit) {
+                    // lifecycleScope 코루틴 시작
                     lifecycleScope.launch {
                         try {
                             statusText = "Checking resources..."
