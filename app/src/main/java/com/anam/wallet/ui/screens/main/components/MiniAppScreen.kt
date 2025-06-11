@@ -48,7 +48,7 @@ fun MiniAppScreen(
     var webView by remember { mutableStateOf<WebView?>(null) }
     var isUsingManager by remember { mutableStateOf(false) }
     
-    DisposableEffect(appId) {
+    LaunchedEffect(appId) {
         val loader = MiniAppLoader(context)
         manifest = loader.loadMiniApp(appId)
         
@@ -59,7 +59,9 @@ fun MiniAppScreen(
             isUsingManager = true
             android.util.Log.d("MiniAppScreen", "Using MiniAppManager for $appId")
         }
-        
+    }
+    
+    DisposableEffect(appId) {
         onDispose {
             // Only destroy if we created it (not from MiniAppManager)
             if (!isUsingManager) {
