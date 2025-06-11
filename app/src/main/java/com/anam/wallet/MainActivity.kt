@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -22,43 +23,39 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.anam.wallet.ui.components.BottomNavBar
-import com.anam.wallet.ui.components.Header
-import com.anam.wallet.ui.screens.hub.SimpleHubScreen
-import com.anam.wallet.ui.screens.browser.BrowserScreen
-import com.anam.wallet.ui.screens.main.MainScreen
-import com.anam.wallet.ui.screens.settings.SettingsScreen
-import com.anam.wallet.ui.screens.settings.ThemeViewModel
-import com.anam.wallet.ui.screens.settings.LocaleViewModel
-import com.anam.wallet.ui.screens.hub.components.ModuleDetailScreen
-import com.anam.wallet.ui.theme.AnamwalletTheme
-import com.anam.wallet.ui.screens.main.components.MiniAppScreen
+import com.anam.wallet.presentation.ui.components.BottomNavBar
+import com.anam.wallet.presentation.ui.components.Header
+import com.anam.wallet.presentation.ui.screens.hub.SimpleHubScreen
+import com.anam.wallet.presentation.ui.screens.browser.BrowserScreen
+import com.anam.wallet.presentation.ui.screens.main.MainScreen
+import com.anam.wallet.presentation.ui.screens.settings.SettingsScreen
+import com.anam.wallet.presentation.ui.screens.settings.ThemeViewModel
+import com.anam.wallet.presentation.ui.screens.settings.LocaleViewModel
+import com.anam.wallet.presentation.ui.screens.hub.components.ModuleDetailScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.viewModels
+import com.anam.wallet.presentation.ui.theme.AnamwalletTheme
+import com.anam.wallet.presentation.ui.screens.main.MiniAppScreen
 
 // Create a CompositionLocal for NavController
 val LocalNavController = staticCompositionLocalOf<NavController> { 
     error("NavController not provided") 
 }
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val themeViewModel: ThemeViewModel by viewModels()
+    private val localeViewModel: LocaleViewModel by viewModels()
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
         setContent {
-            val context = this
-            val themeViewModel: ThemeViewModel = viewModel(
-                factory = ThemeViewModel.factory(context)
-            )
-            val localeViewModel: LocaleViewModel = viewModel(
-                factory = LocaleViewModel.factory(context)
-            )
             val themeMode by themeViewModel.themeMode.collectAsState()
             
             AnamwalletTheme(themeMode = themeMode) {
-                WalletApp(
-                    themeViewModel = themeViewModel,
-                    localeViewModel = localeViewModel
-                )
+                WalletApp(themeViewModel, localeViewModel)
             }
         }
     }
@@ -110,7 +107,7 @@ fun WalletApp(
                     MainScreen()
                 }
                 composable("Identity") {
-                    com.anam.wallet.ui.screens.identity.IdentityScreen()
+                    com.anam.wallet.presentation.ui.screens.identity.IdentityScreen()
                 }
                 composable("Hub") {
                     SimpleHubScreen()
@@ -136,7 +133,7 @@ fun WalletApp(
                     MiniAppScreen(appId = appId)
                 }
                 composable("StudentCardDetail") {
-                    com.anam.wallet.ui.screens.identity.StudentCardDetailScreen(
+                    com.anam.wallet.presentation.ui.screens.identity.StudentCardDetailScreen(
                         onBack = { navController.popBackStack() }
                     )
                 }
