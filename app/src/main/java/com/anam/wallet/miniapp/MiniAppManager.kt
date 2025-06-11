@@ -6,6 +6,7 @@ import android.webkit.WebView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONObject
+import com.anam.wallet.model.miniapp.MiniAppManifest
 import java.io.File
 
 /**

@@ -1,8 +1,12 @@
-package com.anam.wallet.ui.screens.hub.components
+package com.anam.wallet.model.hub
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
+/**
+ * 모듈 상세 정보 데이터
+ * Hub의 ModuleDetailScreen에서 사용
+ */
 data class ModuleDetailData(
     val id: String,
     val name: String,

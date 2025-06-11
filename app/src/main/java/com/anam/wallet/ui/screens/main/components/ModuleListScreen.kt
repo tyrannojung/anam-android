@@ -33,15 +33,13 @@ import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
 import com.anam.wallet.miniapp.MiniAppManager
 import com.anam.wallet.miniapp.MiniAppScanner
-import com.anam.wallet.miniapp.ScannedMiniApp
-import kotlinx.coroutines.launch
+import com.anam.wallet.model.miniapp.ScannedMiniApp
 
 @Composable
 fun ModuleListScreen() {
     val scrollState = rememberScrollState()
     val navController = LocalNavController.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val miniAppManager = remember { MiniAppManager.getInstance(context) }
     val miniAppScanner = remember { MiniAppScanner(context) }
     
@@ -54,38 +52,38 @@ fun ModuleListScreen() {
     
     // 미니앱 스캔
     LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                isLoading = true
-                // 캐시 클리어 (디버깅용)
-                miniAppScanner.clearCache()
-                
-                android.util.Log.d("ModuleListScreen", "Starting mini app scan...")
-                scannedApps = miniAppScanner.scanInstalledApps()
-                android.util.Log.d("ModuleListScreen", "Scanned ${scannedApps.size} apps")
-                
-                // 첫 번째 블록체인 모듈을 기본 활성화
-                val firstBlockchain = scannedApps.firstOrNull { it.type == "blockchain" }
-                firstBlockchain?.let {
-                    android.util.Log.d("ModuleListScreen", "Activating blockchain: ${it.appId}")
-                    activeBlockchainId = it.appId
-                    miniAppManager.activateBlockchain(it.appId)
-                }
-                
-                isLoading = false
-            } catch (e: Exception) {
-                android.util.Log.e("ModuleListScreen", "Error scanning apps", e)
-                isLoading = false
+        try {
+            isLoading = true
+            // 캐시 클리어 (디버깅용. 프로덕트에서 제거해야함)
+            // 개발자가 미니앱을 수정했을 때
+            // ex. manifest.json 변경
+            // → 캐시 클리어하지 않으면 변경사항이 안 보임!
+            miniAppScanner.clearCache()
+            
+            android.util.Log.d("ModuleListScreen", "Starting mini app scan...")
+            // 미니앱 스캔 시작!
+            scannedApps = miniAppScanner.scanInstalledApps()
+            android.util.Log.d("ModuleListScreen", "Scanned ${scannedApps.size} apps")
+            
+            // 첫 번째 블록체인 모듈을 기본 활성화
+            val firstBlockchain = scannedApps.firstOrNull { it.type == "blockchain" }
+            firstBlockchain?.let {
+                android.util.Log.d("ModuleListScreen", "Activating blockchain: ${it.appId}")
+                activeBlockchainId = it.appId
+                miniAppManager.activateBlockchain(it.appId)
             }
+            
+            isLoading = false
+        } catch (e: Exception) {
+            android.util.Log.e("ModuleListScreen", "Error scanning apps", e)
+            isLoading = false
         }
     }
     
     // 블록체인 활성화 변경 시
     LaunchedEffect(activeBlockchainId) {
         activeBlockchainId?.let { blockchainId ->
-            scope.launch {
-                miniAppManager.activateBlockchain(blockchainId)
-            }
+            miniAppManager.activateBlockchain(blockchainId)
         }
     }
     

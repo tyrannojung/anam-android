@@ -1,7 +1,7 @@
 package com.anam.wallet.crypto
 
 import android.util.Log
-import com.anam.wallet.model.*
+import com.anam.wallet.model.identity.*
 import com.google.gson.Gson
 import org.json.JSONObject
 import java.text.SimpleDateFormat

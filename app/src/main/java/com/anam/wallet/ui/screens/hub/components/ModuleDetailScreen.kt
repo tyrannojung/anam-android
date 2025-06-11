@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.anam.wallet.R
+import com.anam.wallet.model.hub.ModuleDetailData
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)

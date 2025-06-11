@@ -6,25 +6,8 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
-
-data class MiniAppManifest(
-    val appId: String,
-    val type: String,
-    val name: String,
-    val version: String,
-    val icon: String? = null,
-    val description: String? = null,
-    val pages: List<String> = emptyList(),
-    val window: WindowConfig? = null,
-    val permissions: List<String> = emptyList()
-)
-
-data class WindowConfig(
-    val navigationBarTextStyle: String? = null,
-    val navigationBarTitleText: String? = null,
-    val navigationBarBackgroundColor: String? = null,
-    val backgroundColor: String? = null
-)
+import com.anam.wallet.model.miniapp.MiniAppManifest
+import com.anam.wallet.model.miniapp.WindowConfig
 
 class MiniAppLoader(private val context: Context) {
     companion object {
@@ -106,7 +89,7 @@ class MiniAppLoader(private val context: Context) {
             
             // Check if manifest is in a subdirectory (legacy structure)
             if (!manifestFile.exists()) {
-                val subDirs = miniAppDir.listFiles { it.isDirectory }
+                val subDirs = miniAppDir.listFiles { file: File -> file.isDirectory }
                 if (subDirs != null && subDirs.isNotEmpty()) {
                     val subDir = subDirs[0]
                     manifestFile = File(subDir, MANIFEST_FILE)
@@ -178,7 +161,7 @@ class MiniAppLoader(private val context: Context) {
         // Check if files are in a subdirectory
         val manifestFile = File(miniAppDir, MANIFEST_FILE)
         if (!manifestFile.exists()) {
-            val subDirs = miniAppDir.listFiles { it.isDirectory }
+            val subDirs = miniAppDir.listFiles { file: File -> file.isDirectory }
             if (subDirs != null && subDirs.isNotEmpty()) {
                 return "file://${subDirs[0].absolutePath}/"
             }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.anam.wallet.model.WalletInfo
+import com.anam.wallet.model.identity.WalletInfo
 
 class WalletManager(private val context: Context) {
     

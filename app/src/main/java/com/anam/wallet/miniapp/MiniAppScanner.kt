@@ -10,18 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.anam.wallet.R
-
-data class ScannedMiniApp(
-    val appId: String,
-    val name: String,
-    val type: String,
-    val version: String,
-    val iconBitmap: Bitmap? = null,
-    val primaryColor: Color,
-    val balance: String? = null,
-    // 임시 하드코딩 아이콘 (동적 로딩 실패 시 폴백)
-    val fallbackIconRes: Int? = null
-)
+import com.anam.wallet.model.miniapp.ScannedMiniApp
 
 class MiniAppScanner(
     private val context: Context
@@ -45,7 +34,10 @@ class MiniAppScanner(
             
             val appFolders = miniappsDir.listFiles { file: File -> file.isDirectory } ?: emptyArray()
             Log.d(TAG, "Found ${appFolders.size} installed mini apps")
-            
+
+            // mapNotNull 사용 이유
+            // appFolders = [ethereum폴더, bitcoin폴더, 손상된폴더]
+            // 결과: [EthereumApp, BitcoinApp]  ← 손상된 폴더는 제외됨
             val scannedApps = appFolders.mapNotNull { appFolder ->
                 val appId = appFolder.name
                 try {

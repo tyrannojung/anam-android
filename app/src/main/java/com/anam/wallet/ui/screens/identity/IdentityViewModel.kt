@@ -3,8 +3,8 @@ package com.anam.wallet.ui.screens.identity
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.anam.wallet.model.VerifiableCredential
-import com.anam.wallet.model.VerifiablePresentation
+import com.anam.wallet.model.identity.VerifiableCredential
+import com.anam.wallet.model.identity.VerifiablePresentation
 import com.anam.wallet.service.DIDService
 import com.anam.wallet.service.WalletStatus
 import com.anam.wallet.storage.VCManager

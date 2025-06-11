@@ -3,7 +3,7 @@ package com.anam.wallet.service
 import android.content.Context
 import com.anam.wallet.crypto.SimpleKeyManager
 import com.anam.wallet.crypto.VPManager
-import com.anam.wallet.model.*
+import com.anam.wallet.model.identity.*
 import com.anam.wallet.network.ApiClient
 import com.anam.wallet.storage.VCManager
 import com.anam.wallet.storage.WalletManager

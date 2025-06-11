@@ -1,6 +1,6 @@
 package com.anam.wallet.network
 
-import com.anam.wallet.model.*
+import com.anam.wallet.model.identity.*
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

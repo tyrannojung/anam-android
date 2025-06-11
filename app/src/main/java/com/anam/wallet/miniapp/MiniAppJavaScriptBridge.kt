@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.webkit.JavascriptInterface
 import org.json.JSONObject
+import com.anam.wallet.model.miniapp.MiniAppManifest
 
 class MiniAppJavaScriptBridge(
     private val context: Context,

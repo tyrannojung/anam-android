@@ -23,8 +23,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.anam.wallet.miniapp.MiniAppJavaScriptBridge
 import com.anam.wallet.miniapp.MiniAppLoader
-import com.anam.wallet.miniapp.MiniAppManifest
 import com.anam.wallet.miniapp.MiniAppManager
+import com.anam.wallet.model.miniapp.MiniAppManifest
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api

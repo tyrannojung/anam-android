@@ -1,4 +1,4 @@
-package com.anam.wallet.model
+package com.anam.wallet.model.identity
 
 import com.google.gson.annotations.SerializedName
 

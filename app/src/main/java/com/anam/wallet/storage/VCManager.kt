@@ -1,7 +1,7 @@
 package com.anam.wallet.storage
 
 import android.content.Context
-import com.anam.wallet.model.VerifiableCredential
+import com.anam.wallet.model.identity.VerifiableCredential
 import com.google.gson.Gson
 import java.io.File
 
