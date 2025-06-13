@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:allowBackup="false"
@@ -31,6 +33,21 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.Anamwallet"
             android:configChanges="locale|layoutDirection" />
+        
+        <!-- 블록체인 서비스 (영구 프로세스) -->
+        <service
+            android:name=".blockchain.BlockchainService"
+            android:process=":blockchain"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+        
+        <!-- 블록체인 UI Activity (블록체인 프로세스) -->
+        <activity
+            android:name=".blockchain.BlockchainUIActivity"
+            android:process=":blockchain"
+            android:exported="false"
+            android:theme="@style/Theme.Anamwallet" />
             
     </application>
 

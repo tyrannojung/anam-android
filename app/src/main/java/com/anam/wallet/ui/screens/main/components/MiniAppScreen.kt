@@ -100,6 +100,7 @@ fun MiniAppScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // 현재 하드코딩, 정부 24만 payment기능 위함
             if (isUsingManager && manifest != null) {
                 // Use MiniAppManager for government24
                 LaunchedEffect(appId) {
@@ -160,9 +161,15 @@ fun MiniAppWebView(
                 
                 webViewClient = MiniAppWebViewClient(
                     onPageFinishedCallback = { view ->
-                        // Trigger lifecycle events after page loads
-                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) App.onLaunch();", null)
-                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) App.onShow();", null)
+                        // 페이지 로드 완료 후 JavaScript 실행
+                        // 디버깅을 위한 로그 추가
+                        view.evaluateJavascript("console.log('Page finished loading, checking App object...');", null)
+                        view.evaluateJavascript("console.log('typeof App:', typeof App);", null)
+                        view.evaluateJavascript("console.log('App object:', App);", null)
+                        
+                        // App 생명주기 함수 호출
+                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) { console.log('Calling App.onLaunch()'); App.onLaunch(); } else { console.log('App.onLaunch not found'); }", null)
+                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) { console.log('Calling App.onShow()'); App.onShow(); } else { console.log('App.onShow not found'); }", null)
                     }
                 )
                 webChromeClient = MiniAppWebChromeClient()

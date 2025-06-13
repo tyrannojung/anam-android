@@ -29,8 +29,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Intent
 import com.anam.wallet.LocalNavController
 import com.anam.wallet.R
+import com.anam.wallet.blockchain.BlockchainUIActivity
 import com.anam.wallet.miniapp.MiniAppManager
 import com.anam.wallet.miniapp.MiniAppScanner
 import com.anam.wallet.model.miniapp.ScannedMiniApp
@@ -58,7 +60,7 @@ fun ModuleListScreen() {
             // 개발자가 미니앱을 수정했을 때
             // ex. manifest.json 변경
             // → 캐시 클리어하지 않으면 변경사항이 안 보임!
-            miniAppScanner.clearCache()
+            // miniAppScanner.clearCache()
             
             android.util.Log.d("ModuleListScreen", "Starting mini app scan...")
             // 미니앱 스캔 시작!
@@ -70,7 +72,6 @@ fun ModuleListScreen() {
             firstBlockchain?.let {
                 android.util.Log.d("ModuleListScreen", "Activating blockchain: ${it.appId}")
                 activeBlockchainId = it.appId
-                miniAppManager.activateBlockchain(it.appId)
             }
             
             isLoading = false
@@ -124,7 +125,11 @@ fun ModuleListScreen() {
                     },
                     onModuleClick = { module ->
                         android.util.Log.d("ModuleListScreen", "Blockchain module clicked: ${module.appId}")
-                        navController.navigate("miniapp/${module.appId}")
+                        // Launch BlockchainUIActivity in blockchain process
+                        val intent = Intent(context, BlockchainUIActivity::class.java).apply {
+                            putExtra(BlockchainUIActivity.EXTRA_BLOCKCHAIN_ID, module.appId)
+                        }
+                        context.startActivity(intent)
                     }
                 )
                 

@@ -1,12 +1,19 @@
 package com.anam.wallet.miniapp
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import android.util.Log
 import android.webkit.WebView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONObject
 import com.anam.wallet.model.miniapp.MiniAppManifest
+import com.anam.wallet.blockchain.BlockchainService
+import com.anam.wallet.blockchain.IBlockchainService
+import com.anam.wallet.blockchain.IBlockchainCallback
 import java.io.File
 
 /**
@@ -27,9 +34,10 @@ class MiniAppManager private constructor(private val context: Context) {
         }
     }
     
-    // 활성 블록체인 WebView (백그라운드에서 유지)
-    private var activeBlockchainWebView: WebView? = null
-    private var activeBlockchainId: String? = null
+    // AIDL 서비스 연결
+    private var blockchainService: IBlockchainService? = null
+    private var serviceConnection: ServiceConnection? = null
+    private var isServiceBound = false
     
     // 활성 앱 WebView (포그라운드에서만 유지)
     private var activeAppWebView: WebView? = null
@@ -42,58 +50,89 @@ class MiniAppManager private constructor(private val context: Context) {
     private val _activeBlockchain = MutableStateFlow<String?>(null)
     val activeBlockchain: StateFlow<String?> = _activeBlockchain
     
+    // 서비스 연결 대기 중인 블록체인 ID
+    private var pendingBlockchainId: String? = null
+    
+    init {
+        bindToBlockchainService()
+    }
+    
+    /**
+     * 블록체인 서비스에 바인드
+     */
+    private fun bindToBlockchainService() {
+        // intent "어떤 작업을 하고 싶다"는 요청
+        // context: 현재 위치 (어디서 출발하는지)
+        // BlockchainService::class.java: 목적지 (어디로 가고 싶은지)
+        // "BlockchainService와 연결하고 싶어"라는 의도 생성
+        val intent = Intent(context, BlockchainService::class.java)
+
+        // ServiceConnection = 서비스와 연결될 때의 "이벤트 리스너"
+        // bindService() 호출 후 연결 성공 시 onServiceConnected 자동 호출
+        // 블록체인 서비스 크래시시 onServiceDisconnected 자동 호출
+        serviceConnection = object : ServiceConnection {
+            override fun onServiceConnected(
+                name: ComponentName?, // 각각의 인자는 자동으로 채워줌
+                service: IBinder? // 각각의 인자는 자동으로 채워줌
+            ) {
+                // 서비스랑 통신할 수 있는 리모컨을 받음 (인터페이스, 이제부터 블록체인 서비스와 통신 가능)
+                blockchainService = IBlockchainService.Stub.asInterface(service)
+                isServiceBound = true
+                Log.d(TAG, "Connected to BlockchainService")
+                
+                // 대기 중인 블록체인 활성화 요청이 있으면 처리
+                pendingBlockchainId?.let { blockchainId ->
+                    Log.d(TAG, "Processing pending blockchain activation: $blockchainId")
+                    try {
+                        blockchainService?.switchBlockchain(blockchainId)
+                        _activeBlockchain.value = blockchainId
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to activate pending blockchain", e)
+                    }
+                    pendingBlockchainId = null
+                }
+            }
+            
+            override fun onServiceDisconnected(name: ComponentName?) {
+                blockchainService = null
+                isServiceBound = false
+                Log.d(TAG, "Disconnected from BlockchainService")
+            }
+        }
+        
+        // 서비스를 먼저 시작한다.
+        context.startService(intent)
+        
+        // 해당 서비스와 통신 연결을 만듦
+        context.bindService(intent, serviceConnection!!, Context.BIND_AUTO_CREATE)
+    }
+    
     /**
      * 블록체인 미니앱 활성화
      */
-    suspend fun activateBlockchain(blockchainId: String): WebView? {
+    fun activateBlockchain(blockchainId: String) {
         Log.d(TAG, "Activating blockchain: $blockchainId")
         
-        // 기존 블록체인 WebView 정리
-        activeBlockchainWebView?.let {
-            Log.d(TAG, "Destroying previous blockchain WebView: $activeBlockchainId")
-            it.destroy()
+        // 이미 활성화된 블록체인이면 무시
+        if (_activeBlockchain.value == blockchainId) {
+            Log.d(TAG, "Blockchain already active: $blockchainId")
+            return
         }
         
-        // 새 블록체인 WebView 생성
-        val manifest = miniAppLoader.loadMiniApp(blockchainId)
-        if (manifest != null) {
-            activeBlockchainWebView = createWebView(manifest).apply {
-                // 백그라운드에서도 실행 가능하도록 설정
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                }
-                
-                // JavaScript Bridge 추가
-                val bridge = MiniAppJavaScriptBridge(
-                    context = context,
-                    manifest = manifest,
-                    onPaymentRequest = null, // 블록체인은 결제 요청을 받는 쪽
-                    onPaymentResponse = { requestId, responseData ->
-                        // 블록체인에서 응답이 오면 앱으로 전달
-                        sendPaymentResponse(requestId, responseData)
-                    }
-                )
-                addJavascriptInterface(bridge, "anam")
-                
-                // 메인 페이지 로드 - MiniAppLoader의 경로 사용
-                val loader = MiniAppLoader(context)
-                val basePath = loader.getMiniAppBasePath(blockchainId)
-                val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                val url = "$basePath${firstPage}.html"
-                
-                Log.d(TAG, "Loading blockchain URL: $url")
-                loadUrl(url)
-            }
-            
-            activeBlockchainId = blockchainId
+        if (!isServiceBound || blockchainService == null) {
+            Log.d(TAG, "BlockchainService not connected yet, queuing activation request")
+            pendingBlockchainId = blockchainId
+            return
+        }
+        
+        // AIDL을 통해 블록체인 서비스에 전환 요청
+        try {
+            blockchainService?.switchBlockchain(blockchainId)
             _activeBlockchain.value = blockchainId
-            
-            Log.d(TAG, "Blockchain activated: $blockchainId")
-            return activeBlockchainWebView
+            Log.d(TAG, "Blockchain switched to: $blockchainId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to switch blockchain", e)
         }
-        
-        return null
     }
     
     /**
@@ -129,6 +168,29 @@ class MiniAppManager private constructor(private val context: Context) {
                 )
                 addJavascriptInterface(bridge, "anam")
                 
+                // WebViewClient 설정 - 페이지 로드 완료 시 생명주기 함수 호출
+                webViewClient = object : android.webkit.WebViewClient() {
+                    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        Log.d(TAG, "Page finished loading: $url")
+                        
+                        // 생명주기 함수 호출
+                        view?.evaluateJavascript("console.log('MiniAppManager: Page loaded, checking App object...');", null)
+                        view?.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) { console.log('MiniAppManager: Calling App.onLaunch()'); App.onLaunch(); }", null)
+                        view?.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) { console.log('MiniAppManager: Calling App.onShow()'); App.onShow(); }", null)
+                    }
+                }
+                
+                // WebChromeClient 설정 - 콘솔 로그 출력
+                webChromeClient = object : android.webkit.WebChromeClient() {
+                    override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
+                        consoleMessage?.let {
+                            Log.d(TAG, "[Console] ${it.message()} (${it.sourceId()}:${it.lineNumber()})")
+                        }
+                        return true
+                    }
+                }
+                
                 // 메인 페이지 로드 - MiniAppLoader의 경로 사용
                 val loader = MiniAppLoader(context)
                 val basePath = loader.getMiniAppBasePath(appId)
@@ -153,67 +215,102 @@ class MiniAppManager private constructor(private val context: Context) {
      */
     private fun sendPaymentToBlockchain(paymentData: JSONObject, appWebView: WebView) {
         Log.d(TAG, "sendPaymentToBlockchain called with data: $paymentData")
-        Log.d(TAG, "Active blockchain WebView exists: ${activeBlockchainWebView != null}")
-        Log.d(TAG, "Active blockchain ID: $activeBlockchainId")
         
-        activeBlockchainWebView?.let { blockchainWebView ->
-            // 요청 ID 생성 (응답 매칭용)
-            val requestId = "req_${System.currentTimeMillis()}"
-            paymentData.put("requestId", requestId)
-            
-            // 앱 WebView 저장 (응답 전달용)
-            pendingRequests[requestId] = appWebView
-            
-            Log.d(TAG, "Dispatching payment event to blockchain WebView")
-            
-            // JavaScript 이벤트 발생
-            val script = """
-                (function() {
-                    console.log('Dispatching payment event in blockchain WebView');
-                    const event = new CustomEvent('paymentRequest', {
-                        detail: ${paymentData.toString()}
-                    });
-                    window.dispatchEvent(event);
-                    return 'Event dispatched';
-                })();
-            """.trimIndent()
-            
-            blockchainWebView.evaluateJavascript(script) { result ->
-                Log.d(TAG, "Payment event dispatch result: $result")
-            }
-        } ?: Log.e(TAG, "No active blockchain WebView to send payment request")
+        if (!isServiceBound || blockchainService == null) {
+            Log.e(TAG, "BlockchainService not connected")
+            return
+        }
+        
+        // 요청 ID 생성 (응답 매칭용)
+        // 비동기 통신이므로, 결제가 동시에 여러개 보낼 수 있으므로 응답 id를 매칭하는게 중요
+        val requestId = "req_${System.currentTimeMillis()}"
+        paymentData.put("requestId", requestId)
+        
+        // 앱 WebView 저장 (응답 전달용)
+        pendingRequests[requestId] = appWebView
+        
+        try {
+            // AIDL을 통해 블록체인 서비스로 요청 전송
+            blockchainService?.processRequest(paymentData.toString(), object : IBlockchainCallback.Stub() {
+
+                // 성공시,
+                override fun onSuccess(responseJson: String?) {
+                    Log.d(TAG, "Blockchain request success: $responseJson")
+                    
+                    // UI 스레드에서 WebView 업데이트
+                    appWebView.post {
+                        try {
+                            // JSONObject, 문자열을 JSON 객체로 변환
+                            val responseData = JSONObject(responseJson ?: "{}")
+                            //  JavaScript 코드를 문자열로 생성
+                            val script = """
+                                (function() {
+                                    const event = new CustomEvent('paymentResponse', {
+                                        detail: ${responseData.toString()}
+                                    });
+                                    window.dispatchEvent(event);
+                                })();
+                            """.trimIndent()
+                            
+                            appWebView.evaluateJavascript(script) { result ->
+                                Log.d(TAG, "Payment response sent back to app: $result")
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to process blockchain response", e)
+                        }
+                    }
+                    
+                    // 처리 완료 후 제거
+                    pendingRequests.remove(requestId)
+                }
+                
+                override fun onError(errorMessage: String?) {
+                    Log.e(TAG, "Blockchain request error: $errorMessage")
+                    
+                    // UI 스레드에서 에러 처리
+                    appWebView.post {
+                        val errorData = JSONObject().apply {
+                            put("error", errorMessage ?: "Unknown error")
+                            put("requestId", requestId)
+                        }
+                        
+                        val script = """
+                            (function() {
+                                const event = new CustomEvent('paymentError', {
+                                    detail: ${errorData.toString()}
+                                });
+                                window.dispatchEvent(event);
+                            })();
+                        """.trimIndent()
+                        
+                        appWebView.evaluateJavascript(script, null)
+                    }
+                    
+                    // 처리 완료 후 제거
+                    pendingRequests.remove(requestId)
+                }
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send request to blockchain service", e)
+            pendingRequests.remove(requestId)
+        }
     }
     
     // 응답 대기 중인 요청들
     private val pendingRequests = mutableMapOf<String, WebView>()
     
-    /**
-     * 블록체인에서 결제 응답 전송
-     */
-    fun sendPaymentResponse(requestId: String, responseData: JSONObject) {
-        pendingRequests[requestId]?.let { appWebView ->
-            val script = """
-                (function() {
-                    const event = new CustomEvent('paymentResponse', {
-                        detail: ${responseData.toString()}
-                    });
-                    window.dispatchEvent(event);
-                })();
-            """.trimIndent()
-            
-            appWebView.evaluateJavascript(script) { result ->
-                Log.d(TAG, "Payment response sent back to app: $result")
-            }
-            
-            // 처리 완료 후 제거
-            pendingRequests.remove(requestId)
-        }
-    }
     
     /**
-     * 현재 활성화된 블록체인 WebView 가져오기
+     * 현재 활성화된 블록체인 ID 가져오기
      */
-    fun getActiveBlockchainWebView(): WebView? = activeBlockchainWebView
+    fun getActiveBlockchainId(): String? {
+        return try {
+            blockchainService?.getActiveBlockchainId()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get active blockchain ID", e)
+            null
+        }
+    }
     
     /**
      * 현재 활성화된 앱 WebView 가져오기
@@ -241,9 +338,13 @@ class MiniAppManager private constructor(private val context: Context) {
      * 모든 WebView 정리
      */
     fun cleanup() {
-        activeBlockchainWebView?.destroy()
-        activeBlockchainWebView = null
-        activeBlockchainId = null
+        // Unbind from blockchain service
+        if (isServiceBound) {
+            serviceConnection?.let {
+                context.unbindService(it)
+            }
+            isServiceBound = false
+        }
         
         activeAppWebView?.destroy()
         activeAppWebView = null
