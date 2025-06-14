@@ -10,7 +10,8 @@ class MiniAppJavaScriptBridge(
     private val context: Context,
     private val manifest: MiniAppManifest,
     private val onPaymentRequest: ((JSONObject, String) -> Unit)? = null,
-    private val onPaymentResponse: ((String, JSONObject) -> Unit)? = null
+    private val onPaymentResponse: ((String, JSONObject) -> Unit)? = null,
+    private val onVPRequest: ((JSONObject) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "MiniAppJSBridge"
@@ -56,6 +57,26 @@ class MiniAppJavaScriptBridge(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send payment response", e)
+        }
+    }
+    
+    @JavascriptInterface
+    fun requestVP(vpRequestJson: String) {
+        Log.d(TAG, "requestVP called with: $vpRequestJson")
+        
+        try {
+            val vpRequest = JSONObject(vpRequestJson)
+            
+            context.runOnUiThread {
+                if (onVPRequest != null) {
+                    Log.d(TAG, "Invoking VP request handler")
+                    onVPRequest.invoke(vpRequest)
+                } else {
+                    Log.e(TAG, "No VP request handler registered!")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to process VP request", e)
         }
     }
     

@@ -35,6 +35,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import com.anam.wallet.LocalNavController
+import com.anam.wallet.ui.components.VPRequestBottomSheet
+import com.anam.wallet.service.DIDService
+import com.anam.wallet.storage.VCManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import com.google.gson.Gson
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +54,12 @@ fun MiniAppScreen(
     var manifest by remember { mutableStateOf<MiniAppManifest?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var isUsingManager by remember { mutableStateOf(false) }
+    
+    // VP 요청 상태
+    var showVPDialog by remember { mutableStateOf(false) }
+    var vpRequestData by remember { mutableStateOf<JSONObject?>(null) }
+    var vpRequesterName by remember { mutableStateOf("") }
+    var vpChallenge by remember { mutableStateOf("") }
     
     LaunchedEffect(appId) {
         val loader = MiniAppLoader(context)
@@ -104,6 +117,16 @@ fun MiniAppScreen(
             if (isUsingManager && manifest != null) {
                 // Use MiniAppManager for government24
                 LaunchedEffect(appId) {
+                    android.util.Log.d("MiniAppScreen", "Setting up VP callback for $appId")
+                    
+                    // VP 콜백 설정 (LaunchedEffect 안에서 설정해야 함)
+                    miniAppManager.setVPCallback { vpRequest, requestWebView ->
+                        vpRequestData = vpRequest
+                        vpRequesterName = vpRequest.optString("requesterName", "정부24")
+                        vpChallenge = vpRequest.getString("challenge")
+                        showVPDialog = true
+                    }
+                    
                     android.util.Log.d("MiniAppScreen", "Activating app via MiniAppManager: $appId")
                     val createdWebView = miniAppManager.activateApp(appId)
                     webView = createdWebView
@@ -126,6 +149,25 @@ fun MiniAppScreen(
                     onWebViewCreated = { webView = it }
                 )
             }
+        }
+        
+        // VP 요청 다이얼로그
+        if (showVPDialog) {
+            VPRequestBottomSheet(
+                requesterName = vpRequesterName,
+                challenge = vpChallenge,
+                onConfirm = {
+                    // VP 생성 및 응답
+                    handleVPGeneration(context, vpChallenge, webView)
+                },
+                onDismiss = {
+                    showVPDialog = false
+                    // 에러 응답 전송
+                    webView?.let { wv ->
+                        sendVPResponse(wv, null, "User cancelled", vpChallenge)
+                    }
+                }
+            )
         }
     }
 }
@@ -235,5 +277,82 @@ private class MiniAppWebChromeClient : WebChromeClient() {
             )
         }
         return true
+    }
+}
+
+/**
+ * VP 생성 처리
+ */
+private suspend fun handleVPGeneration(
+    context: android.content.Context,
+    challenge: String,
+    webView: WebView?
+) {
+    withContext(Dispatchers.IO) {
+        try {
+            val didService = DIDService(context)
+            val vcManager = VCManager(context)
+            
+            // VC 로드
+            val vc = vcManager.getVC()
+            if (vc == null) {
+                withContext(Dispatchers.Main) {
+                    sendVPResponse(webView, null, "No VC found", challenge)
+                }
+                return@withContext
+            }
+            
+            // VP 생성
+            val vpResult = didService.createVerifiablePresentation(challenge)
+            
+            vpResult.fold(
+                onSuccess = { vp ->
+                    // VP를 JSON 문자열로 변환 (Gson 사용)
+                    val gson = Gson()
+                    val vpJson = gson.toJson(vp)
+                    
+                    withContext(Dispatchers.Main) {
+                        sendVPResponse(webView, vpJson, null, challenge)
+                    }
+                },
+                onFailure = { error ->
+                    withContext(Dispatchers.Main) {
+                        sendVPResponse(webView, null, error.message ?: "Failed to generate VP", challenge)
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("MiniAppScreen", "Failed to generate VP", e)
+            withContext(Dispatchers.Main) {
+                sendVPResponse(webView, null, e.message ?: "Failed to generate VP", challenge)
+            }
+        }
+    }
+}
+
+/**
+ * VP 응답 전송
+ */
+private fun sendVPResponse(webView: WebView?, vp: String?, error: String?, challenge: String) {
+    webView?.let { wv ->
+        val responseData = JSONObject().apply {
+            if (error != null) {
+                put("error", error)
+            } else {
+                put("vp", vp)
+                put("challenge", challenge)
+            }
+        }
+        
+        val script = """
+            (function() {
+                const event = new CustomEvent('vpResponse', {
+                    detail: ${responseData.toString()}
+                });
+                window.dispatchEvent(event);
+            })();
+        """.trimIndent()
+        
+        wv.evaluateJavascript(script, null)
     }
 }

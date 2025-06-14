@@ -164,7 +164,11 @@ class MiniAppManager private constructor(private val context: Context) {
                         // 앱에서 결제 요청 시 블록체인으로 전달
                         sendPaymentToBlockchain(paymentData, this)
                     },
-                    onPaymentResponse = null // 앱은 응답을 받는 쪽이므로 null
+                    onPaymentResponse = null, // 앱은 응답을 받는 쪽이므로 null
+                    onVPRequest = { vpRequest ->
+                        // VP 요청 처리
+                        handleVPRequest(vpRequest, this)
+                    }
                 )
                 addJavascriptInterface(bridge, "anam")
                 
@@ -333,6 +337,58 @@ class MiniAppManager private constructor(private val context: Context) {
             }
         }
     }
+    
+    /**
+     * VP 요청 처리
+     */
+    private fun handleVPRequest(vpRequest: JSONObject, appWebView: WebView) {
+        Log.d(TAG, "handleVPRequest called with: $vpRequest")
+        
+        try {
+            val challenge = vpRequest.getString("challenge")
+            val requesterName = vpRequest.optString("requesterName", "Unknown Service")
+            
+            // VP 콜백이 설정되어 있으면 호출 (Activity에서 처리)
+            if (vpCallback != null) {
+                vpCallback?.invoke(vpRequest, appWebView)
+            } else {
+                Log.e(TAG, "No VP callback registered")
+                sendVPError(appWebView, "Internal error: No VP handler")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to handle VP request", e)
+            sendVPError(appWebView, e.message ?: "Unknown error")
+        }
+    }
+    
+    /**
+     * VP 에러 응답 전송
+     */
+    private fun sendVPError(webView: WebView, error: String) {
+        val errorData = JSONObject().apply {
+            put("error", error)
+        }
+        
+        val script = """
+            (function() {
+                const event = new CustomEvent('vpResponse', {
+                    detail: ${errorData.toString()}
+                });
+                window.dispatchEvent(event);
+            })();
+        """.trimIndent()
+        
+        webView.evaluateJavascript(script, null)
+    }
+    
+    /**
+     * VP 콜백 설정
+     */
+    fun setVPCallback(callback: (JSONObject, WebView) -> Unit) {
+        vpCallback = callback
+    }
+    
+    private var vpCallback: ((JSONObject, WebView) -> Unit)? = null
     
     /**
      * 모든 WebView 정리
