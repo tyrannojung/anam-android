@@ -62,27 +62,13 @@
   transform: translateY(0);
 }
 
-.login-links {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-}
-
-.login-links a {
+/* 로그인 안내 문구 */
+.login-notice {
   color: #666;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.login-links a:hover {
-  color: #4a90e2;
-  text-decoration: underline;
-}
-
-.login-links .divider {
-  color: #ddd;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 20px;
+  line-height: 1.6;
 }
 
 /* 인기 서비스 그리드 */
