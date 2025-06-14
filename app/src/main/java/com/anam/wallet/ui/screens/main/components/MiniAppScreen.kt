@@ -24,6 +24,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.anam.wallet.miniapp.MiniAppJavaScriptBridge
 import com.anam.wallet.miniapp.MiniAppLoader
 import com.anam.wallet.miniapp.MiniAppManager
+import com.anam.wallet.miniapp.CustomSchemeWebViewClient
 import com.anam.wallet.model.miniapp.MiniAppManifest
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -119,6 +120,9 @@ fun MiniAppScreen(
                 LaunchedEffect(appId) {
                     android.util.Log.d("MiniAppScreen", "Setting up VP callback for $appId")
                     
+                    // Activity context 설정
+                    miniAppManager.setActivityContext(context)
+                    
                     // VP 콜백 설정 (LaunchedEffect 안에서 설정해야 함)
                     miniAppManager.setVPCallback { vpRequest, requestWebView ->
                         vpRequestData = vpRequest
@@ -201,7 +205,12 @@ fun MiniAppWebView(
                     WebView.setWebContentsDebuggingEnabled(true)
                 }
                 
-                webViewClient = MiniAppWebViewClient(
+                // 커스텀 스킴을 처리하는 WebViewClient 설정
+                // 이제 file:// 대신 anam:// 스킴을 사용합니다
+                webViewClient = CustomSchemeWebViewClient(
+                    appId = appId,        // 미니앱 ID (예: kr.go.government24)
+                    basePath = basePath,  // 파일이 저장된 실제 경로
+                    manifest = manifest,  // 페이지 화이트리스트 검증용
                     onPageFinishedCallback = { view ->
                         // 페이지 로드 완료 후 JavaScript 실행
                         // 디버깅을 위한 로그 추가
@@ -225,9 +234,11 @@ fun MiniAppWebView(
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // Load the first page
+                // 커스텀 스킴으로 첫 페이지 로드
+                // 기존: file:///data/data/.../files/miniapps/kr.go.government24/pages/index/index.html
+                // 변경: anam://miniapp-kr.go.government24/pages/index/index.html
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                val url = "$basePath${firstPage}.html"
+                val url = "anam://miniapp-$appId/${firstPage}.html"
                 
                 android.util.Log.d("MiniAppWebView", "Loading URL: $url")
                 android.util.Log.d("MiniAppWebView", "Base path: $basePath")
@@ -240,32 +251,6 @@ fun MiniAppWebView(
         },
         modifier = Modifier.fillMaxSize()
     )
-}
-
-private class MiniAppWebViewClient(
-    private val onPageFinishedCallback: ((WebView) -> Unit)? = null
-) : WebViewClient() {
-    override fun shouldOverrideUrlLoading(
-        view: WebView?,
-        request: WebResourceRequest?
-    ): Boolean {
-        val url = request?.url?.toString() ?: return false
-        
-        // Allow navigation within the mini app
-        if (url.startsWith("file://")) {
-            return false
-        }
-        
-        // Block external URLs for security
-        Log.w("MiniAppWebView", "Blocked external URL: $url")
-        return true
-    }
-    
-    override fun onPageFinished(view: WebView?, url: String?) {
-        super.onPageFinished(view, url)
-        Log.d("MiniAppWebView", "Page loaded: $url")
-        view?.let { onPageFinishedCallback?.invoke(it) }
-    }
 }
 
 private class MiniAppWebChromeClient : WebChromeClient() {

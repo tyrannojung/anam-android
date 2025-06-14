@@ -8,6 +8,11 @@ let provider = null;
 // 페이지 초기화
 document.addEventListener("DOMContentLoaded", function () {
   console.log("이더리움 지갑 페이지 로드");
+  
+  // 디버깅: 페이지 로드 시 origin 확인
+  console.log('Page load - Current origin:', window.location.origin);
+  console.log('Page load - Current href:', window.location.href);
+  console.log('Page load - localStorage keys:', Object.keys(localStorage));
 
   // ethers.js 로드 확인
   if (typeof ethers === "undefined") {
@@ -112,8 +117,15 @@ async function createWallet() {
       encryptedMnemonic: await encryptMnemonic(mnemonic.phrase),
     };
 
+    // 디버깅: 저장 시 origin 확인
+    console.log('Saving wallet - Current origin:', window.location.origin);
+    console.log('Saving wallet - Current href:', window.location.href);
+    
     // 지갑 정보 저장
     localStorage.setItem("ethereum_wallet", JSON.stringify(walletInfo));
+    
+    // 저장 확인
+    console.log('Wallet saved:', localStorage.getItem("ethereum_wallet") ? "Success" : "Failed");
 
     // 생성 완료 메시지
     showToast("지갑이 성공적으로 생성되었습니다!");
@@ -283,6 +295,11 @@ window.addEventListener('paymentRequest', async (event) => {
   
   try {
     const { to, amount, data, requestId } = event.detail;
+    
+    // 디버깅: localStorage 상태 확인
+    console.log('Current origin:', window.location.origin);
+    console.log('localStorage keys:', Object.keys(localStorage));
+    console.log('localStorage ethereum_wallet:', localStorage.getItem('ethereum_wallet'));
     
     // 지갑 정보 확인
     const walletData = localStorage.getItem('ethereum_wallet');

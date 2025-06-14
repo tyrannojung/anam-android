@@ -21,6 +21,9 @@ import java.io.File
  */
 class MiniAppManager private constructor(private val context: Context) {
     
+    // Activity context를 저장하기 위한 변수
+    private var activityContext: Context? = null
+    
     companion object {
         private const val TAG = "MiniAppManager"
         
@@ -136,6 +139,13 @@ class MiniAppManager private constructor(private val context: Context) {
     }
     
     /**
+     * Activity context 설정
+     */
+    fun setActivityContext(activityContext: Context) {
+        this.activityContext = activityContext
+    }
+    
+    /**
      * 앱 미니앱 활성화
      */
     suspend fun activateApp(appId: String): WebView? {
@@ -151,14 +161,9 @@ class MiniAppManager private constructor(private val context: Context) {
         val manifest = miniAppLoader.loadMiniApp(appId)
         if (manifest != null) {
             activeAppWebView = createWebView(manifest).apply {
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                }
-                
                 // JavaScript Bridge 추가 - 결제 요청 콜백 포함
                 val bridge = MiniAppJavaScriptBridge(
-                    context = context,
+                    context = activityContext ?: context,  // Activity context 우선 사용
                     manifest = manifest,
                     onPaymentRequest = { paymentData, _ ->
                         // 앱에서 결제 요청 시 블록체인으로 전달
@@ -168,22 +173,28 @@ class MiniAppManager private constructor(private val context: Context) {
                     onVPRequest = { vpRequest ->
                         // VP 요청 처리
                         handleVPRequest(vpRequest, this)
-                    }
+                    },
+                    webView = this  // WebView 참조 전달
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // WebViewClient 설정 - 페이지 로드 완료 시 생명주기 함수 호출
-                webViewClient = object : android.webkit.WebViewClient() {
-                    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        Log.d(TAG, "Page finished loading: $url")
+                // WebViewClient 설정 - CustomSchemeWebViewClient 사용
+                val loader = MiniAppLoader(context)
+                val basePath = loader.getMiniAppBasePath(appId)
+                
+                webViewClient = CustomSchemeWebViewClient(
+                    appId = appId,
+                    basePath = basePath,
+                    manifest = manifest,  // 페이지 화이트리스트 검증용 (non-null)
+                    onPageFinishedCallback = { view ->
+                        Log.d(TAG, "Page finished loading")
                         
                         // 생명주기 함수 호출
-                        view?.evaluateJavascript("console.log('MiniAppManager: Page loaded, checking App object...');", null)
-                        view?.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) { console.log('MiniAppManager: Calling App.onLaunch()'); App.onLaunch(); }", null)
-                        view?.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) { console.log('MiniAppManager: Calling App.onShow()'); App.onShow(); }", null)
+                        view.evaluateJavascript("console.log('MiniAppManager: Page loaded, checking App object...');", null)
+                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) { console.log('MiniAppManager: Calling App.onLaunch()'); App.onLaunch(); }", null)
+                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) { console.log('MiniAppManager: Calling App.onShow()'); App.onShow(); }", null)
                     }
-                }
+                )
                 
                 // WebChromeClient 설정 - 콘솔 로그 출력
                 webChromeClient = object : android.webkit.WebChromeClient() {
@@ -195,11 +206,9 @@ class MiniAppManager private constructor(private val context: Context) {
                     }
                 }
                 
-                // 메인 페이지 로드 - MiniAppLoader의 경로 사용
-                val loader = MiniAppLoader(context)
-                val basePath = loader.getMiniAppBasePath(appId)
+                // 메인 페이지 로드 - 커스텀 스킴 사용
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                val url = "$basePath${firstPage}.html"
+                val url = "anam://miniapp-$appId/${firstPage}.html"
                 
                 Log.d(TAG, "Loading app URL: $url")
                 loadUrl(url)
@@ -324,16 +333,32 @@ class MiniAppManager private constructor(private val context: Context) {
     
     /**
      * WebView 생성 헬퍼
+     * 
+     * 보안 설정:
+     * - 커스텀 스킴(anam://)을 사용하므로 file:// 접근 차단
+     * - 심층 방어를 위해 모든 file:// 관련 권한 비활성화
      */
     private fun createWebView(manifest: MiniAppManifest): WebView {
-        return WebView(context).apply {
+        // Activity context가 있으면 사용, 없으면 application context 사용
+        val webViewContext = activityContext ?: context
+        return WebView(webViewContext).apply {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
-                allowFileAccess = true
-                allowContentAccess = true
-                allowFileAccessFromFileURLs = true
-                allowUniversalAccessFromFileURLs = true
+                
+                // 파일 접근 설정 (커스텀 스킴 사용으로 file:// 차단)
+                allowFileAccess = false  // file:// URL 접근 차단
+                allowContentAccess = false  // content:// URL 접근 차단
+                
+                // 추가 보안 설정
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+                loadWithOverviewMode = true
+                useWideViewPort = true
+                
+                // 디버깅 (개발 중에만)
+                WebView.setWebContentsDebuggingEnabled(true)
             }
         }
     }

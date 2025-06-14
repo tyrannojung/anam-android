@@ -3,5 +3,8 @@
   "type": "blockchain",
   "name": "ethereum",
   "version": "1.0.0",
-  "icon": "assets/icons/app_icon.png"
+  "icon": "assets/icons/app_icon.png",
+  "pages": [
+    "pages/index/index"
+  ]
 }

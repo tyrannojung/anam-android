@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
 import com.anam.wallet.model.miniapp.MiniAppManifest
-import com.anam.wallet.model.miniapp.WindowConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -325,22 +324,7 @@ class MiniAppFileManager(private val context: Context) {
             emptyList()
         }
         
-        // Parse window config
-        val windowConfig = if (jsonObject.has("window")) {
-            val windowJson = jsonObject.getJSONObject("window")
-            WindowConfig(
-                navigationBarTextStyle = windowJson.optString("navigationBarTextStyle"),
-                navigationBarTitleText = windowJson.optString("navigationBarTitleText"),
-                navigationBarBackgroundColor = windowJson.optString("navigationBarBackgroundColor"),
-                backgroundColor = windowJson.optString("backgroundColor")
-            )
-        } else null
-        
-        // Parse permissions
-        val permissions = if (jsonObject.has("permissions")) {
-            val permissionsArray = jsonObject.getJSONArray("permissions")
-            (0 until permissionsArray.length()).map { permissionsArray.getString(it) }
-        } else emptyList()
+        // window과 permissions는 제거됨 (W3C MiniApp 표준에 따라 간소화)
         
         return MiniAppManifest(
             appId = jsonObject.getString("app_id"),
@@ -349,9 +333,7 @@ class MiniAppFileManager(private val context: Context) {
             version = jsonObject.getString("version"),
             icon = jsonObject.optString("icon"),
             description = jsonObject.optString("description"),
-            pages = pages,
-            window = windowConfig,
-            permissions = permissions
+            pages = pages
         )
     }
 }

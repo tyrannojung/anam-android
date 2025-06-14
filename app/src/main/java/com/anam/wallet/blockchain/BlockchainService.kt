@@ -19,6 +19,7 @@ import android.webkit.WebViewClient
 import androidx.core.app.NotificationCompat
 import com.anam.wallet.R
 import com.anam.wallet.miniapp.MiniAppLoader
+import com.anam.wallet.miniapp.CustomSchemeWebViewClient
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -138,9 +139,9 @@ class BlockchainService : Service() {
                     javaScriptEnabled = true      // JavaScript 실행 허용 (필수!)
                     domStorageEnabled = true      // localStorage/sessionStorage 사용
 
-                    // 파일 접근 권한
-                    allowFileAccess = true        // file:// URL 접근 허용
-                    allowContentAccess = true     // content:// URL 접근 허용
+                    // 파일 접근 권한 (커스텀 스킴 사용으로 file:// 차단)
+                    allowFileAccess = false        // file:// URL 접근 차단
+                    allowContentAccess = false     // content:// URL 접근 차단
 
                     // 화면 표시 설정
                     setSupportZoom(false)         // 손가락으로 줌 비활성화
@@ -148,20 +149,7 @@ class BlockchainService : Service() {
                     useWideViewPort = true        // HTML viewport 태그 지원
                 }
                 
-                webViewClient = object : WebViewClient() {
-                    /**
-                     * HTML 로드 시작 → JavaScript 로드 → DOM 구성 완료 → onPageFinished() 호출
-                     *                                                     ↓
-                     *                                              이제 JS 실행 가능!
-                     */
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        Log.d(TAG, "Blockchain WebView loaded: $url")
-                        // Trigger lifecycle events
-                        view?.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) App.onLaunch();", null)
-                        view?.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) App.onShow();", null)
-                    }
-                }
+                // WebViewClient는 manifest 로드 후에 설정
                 
                 // Add JavaScript bridge
                 // JavaScript-Android 간 통신 브릿지 설정
@@ -182,18 +170,32 @@ class BlockchainService : Service() {
             if (manifest != null) {
                 // 기본 경로 가져오기
                 val basePath = loader.getMiniAppBasePath(blockchainId)
-                // → "file:///data/data/com.anam.wallet/files/miniapps/com.anam.ethereum/"
+                
+                // CustomSchemeWebViewClient 생성 및 설정
+                Log.d(TAG, "Setting CustomSchemeWebViewClient for blockchain")
+                Log.d(TAG, "BasePath: $basePath")
+                
+                webView.webViewClient = CustomSchemeWebViewClient(
+                    appId = blockchainId,
+                    basePath = basePath,
+                    manifest = manifest,
+                    onPageFinishedCallback = { view ->
+                        Log.d(TAG, "Blockchain WebView loaded")
+                        // Trigger lifecycle events
+                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onLaunch) App.onLaunch();", null)
+                        view.evaluateJavascript("if(typeof App !== 'undefined' && App.onShow) App.onShow();", null)
+                    }
+                )
 
                 // 첫 페이지 결정
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                // manifest.json의 pages 배열에서 첫 번째, 없으면 기본값
-
-                // 전체 URL 조합
-                val url = "$basePath${firstPage}.html"
-                // → "file:///data/.../ethereum/pages/index/index.html"
+                
+                // 커스텀 스킴 URL 사용
+                // 기존: "file:///data/.../ethereum/pages/index/index.html"
+                // 변경: "anam://miniapp-com.anam.ethereum/pages/index/index.html"
+                val url = "anam://miniapp-$blockchainId/${firstPage}.html"
                 
                 Log.d(TAG, "Loading blockchain URL: $url")
-                // HTML 파일 로드 시작
                 webView.loadUrl(url)
 
                 // 변수 저장
@@ -274,22 +276,24 @@ class BlockchainService : Service() {
             
             handler.post {
                 try {
-                    // Generate unique request ID
-                    val requestId = "req_${System.currentTimeMillis()}"
+                    // Parse request to get existing requestId
+                    val requestData = JSONObject(requestJson)
+                    val requestId = requestData.optString("requestId")
+                    
+                    if (requestId.isEmpty()) {
+                        Log.e(TAG, "No requestId found in request")
+                        callback.onError("No requestId found")
+                        return@post
+                    }
                     
                     // Store callback
                     pendingCallbacks[requestId] = callback
-                    
-                    // Create event data with requestId
-                    val eventData = JSONObject(requestJson).apply {
-                        put("requestId", requestId)
-                    }
                     
                     // Send to blockchain WebView
                     val script = """
                         (function() {
                             const event = new CustomEvent('paymentRequest', {
-                                detail: ${eventData.toString()}
+                                detail: ${requestData.toString()}
                             });
                             window.dispatchEvent(event);
                         })();

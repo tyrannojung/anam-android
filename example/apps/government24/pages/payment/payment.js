@@ -6,7 +6,8 @@ let selectedMethod = 'blockchain';
 
 // 뒤로가기
 function handleBack() {
-    window.history.back();
+    // 메인 페이지로 이동
+    window.anam.navigateTo('pages/index/index');
 }
 
 // 결제 수단 선택
@@ -70,6 +71,7 @@ function handlePaymentResponse(event) {
             chainId: response.chainId || '11155111'
         });
         
-        window.location.href = '../success/success.html?' + params.toString();
+        // navigateTo API 사용 (manifest 검증 포함)
+        window.anam.navigateTo('pages/success/success?' + params.toString());
     }
 }

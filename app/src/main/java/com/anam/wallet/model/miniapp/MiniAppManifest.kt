@@ -11,14 +11,5 @@ data class MiniAppManifest(
     val version: String,
     val icon: String? = null,
     val description: String? = null,
-    val pages: List<String> = emptyList(),
-    val window: WindowConfig? = null,
-    val permissions: List<String> = emptyList()
-)
-
-data class WindowConfig(
-    val navigationBarTextStyle: String? = null,
-    val navigationBarTitleText: String? = null,
-    val navigationBarBackgroundColor: String? = null,
-    val backgroundColor: String? = null
+    val pages: List<String> = emptyList()  // 미니앱의 모든 페이지 목록 (보안을 위한 화이트리스트)
 )

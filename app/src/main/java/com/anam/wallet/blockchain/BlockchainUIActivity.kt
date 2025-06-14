@@ -163,8 +163,11 @@ fun BlockchainWebView(
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
-                    allowFileAccess = true
-                    allowContentAccess = true
+                    
+                    // 파일 접근 차단 (커스텀 스킴 사용)
+                    allowFileAccess = false
+                    allowContentAccess = false
+                    
                     setSupportZoom(false)
                     builtInZoomControls = false
                     displayZoomControls = false
@@ -175,14 +178,17 @@ fun BlockchainWebView(
                     WebView.setWebContentsDebuggingEnabled(true)
                 }
                 
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        Log.d("BlockchainWebView", "Page loaded: $url")
+                // 커스텀 스킴을 사용하도록 설정
+                webViewClient = com.anam.wallet.miniapp.CustomSchemeWebViewClient(
+                    appId = blockchainId,
+                    basePath = basePath,
+                    manifest = manifest,
+                    onPageFinishedCallback = { view ->
+                        Log.d("BlockchainWebView", "Page loaded")
                         // Note: Lifecycle events are already handled by BlockchainService
                         // This is just for UI display
                     }
-                }
+                )
                 
                 // Add JavaScript Bridge for UI interactions
                 val bridge = MiniAppJavaScriptBridge(
@@ -193,9 +199,9 @@ fun BlockchainWebView(
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // Load the first page
+                // Load the first page with custom scheme
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                val url = "$basePath${firstPage}.html"
+                val url = "anam://miniapp-$blockchainId/${firstPage}.html"
                 
                 Log.d("BlockchainWebView", "Loading URL: $url")
                 loadUrl(url)

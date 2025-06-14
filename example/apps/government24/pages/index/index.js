@@ -61,8 +61,8 @@ function handleVPResponse(event) {
     isLoggedIn = true;
     alert('로그인이 완료되었습니다.');
     
-    // 결제 페이지로 이동
-    window.location.href = '../payment/payment.html';
+    // 결제 페이지로 이동 (navigateTo API 사용)
+    window.anam.navigateTo('pages/payment/payment');
 }
 
 // 서비스 클릭 핸들러
@@ -77,7 +77,7 @@ function handleServiceClick(serviceName) {
     
     // 주민등록등본 클릭 시 결제 페이지로 이동
     if (serviceName === '주민등록등본') {
-        window.location.href = '../payment/payment.html';
+        window.anam.navigateTo('pages/payment/payment');
     } else {
         // 다른 서비스들도 아무 반응 없음
         return;
