@@ -179,11 +179,11 @@ class MiniAppFileManager(private val context: Context) {
         if (!manifestFile.exists()) {
             val subDirs = appDir.listFiles { file: File -> file.isDirectory }
             if (subDirs != null && subDirs.isNotEmpty()) {
-                return "file://${subDirs[0].absolutePath}/"
+                return "${subDirs[0].absolutePath}/"
             }
         }
         
-        return "file://${appDir.absolutePath}/"
+        return "${appDir.absolutePath}/"
     }
     
     /**

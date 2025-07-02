@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,8 +50,7 @@ fun ModuleListScreen() {
     var scannedApps by remember { mutableStateOf<List<ScannedMiniApp>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     
-    // 활성화된 블록체인 모듈 ID 상태
-    var activeBlockchainId by remember { mutableStateOf<String?>(null) }
+    // 활성화된 블록체인은 이제 BlockchainUIActivity에서 관리
     
     // 미니앱 스캔
     LaunchedEffect(Unit) {
@@ -67,12 +67,7 @@ fun ModuleListScreen() {
             scannedApps = miniAppScanner.scanInstalledApps()
             android.util.Log.d("ModuleListScreen", "Scanned ${scannedApps.size} apps")
             
-            // 첫 번째 블록체인 모듈을 기본 활성화
-            val firstBlockchain = scannedApps.firstOrNull { it.type == "blockchain" }
-            firstBlockchain?.let {
-                android.util.Log.d("ModuleListScreen", "Activating blockchain: ${it.appId}")
-                activeBlockchainId = it.appId
-            }
+            // 블록체인 활성화는 이제 사용자가 클릭할 때만 진행
             
             isLoading = false
         } catch (e: Exception) {
@@ -81,11 +76,12 @@ fun ModuleListScreen() {
         }
     }
     
-    // 블록체인 활성화 변경 시
+    // MiniAppManager에서 활성 블록체인 ID 관찰
+    val activeBlockchainId by miniAppManager.activeBlockchain.collectAsState()
+    
+    // 디버깅을 위한 로그
     LaunchedEffect(activeBlockchainId) {
-        activeBlockchainId?.let { blockchainId ->
-            miniAppManager.activateBlockchain(blockchainId)
-        }
+        android.util.Log.d("ModuleListScreen", "Active blockchain changed to: $activeBlockchainId")
     }
     
     // 타입별로 분류
@@ -120,11 +116,9 @@ fun ModuleListScreen() {
                     title = stringResource(R.string.main_section_blockchain),
                     modules = blockchainModules,
                     activeModuleId = activeBlockchainId,
-                    onActivateModule = { moduleId ->
-                        activeBlockchainId = moduleId
-                    },
                     onModuleClick = { module ->
                         android.util.Log.d("ModuleListScreen", "Blockchain module clicked: ${module.appId}")
+                        android.util.Log.d("ModuleListScreen", "Current active blockchain: $activeBlockchainId")
                         // Launch BlockchainUIActivity in blockchain process
                         val intent = Intent(context, BlockchainUIActivity::class.java).apply {
                             putExtra(BlockchainUIActivity.EXTRA_BLOCKCHAIN_ID, module.appId)
@@ -174,7 +168,6 @@ private fun BlockchainModuleSection(
     title: String,
     modules: List<ScannedMiniApp>,
     activeModuleId: String?,
-    onActivateModule: (String) -> Unit,
     onModuleClick: (ScannedMiniApp) -> Unit
 ) {
     Column {
@@ -196,7 +189,6 @@ private fun BlockchainModuleSection(
                 BlockchainModuleCard(
                     module = modules[index],
                     isActive = modules[index].appId == activeModuleId,
-                    onActivate = { onActivateModule(modules[index].appId) },
                     onClick = { onModuleClick(modules[index]) }
                 )
             }
@@ -256,7 +248,6 @@ private fun AppModuleSection(
 private fun BlockchainModuleCard(
     module: ScannedMiniApp,
     isActive: Boolean,
-    onActivate: () -> Unit,
     onClick: () -> Unit
 ) {
     val animatedScale by animateFloatAsState(
@@ -270,17 +261,14 @@ private fun BlockchainModuleCard(
     
     val borderColor by animateColorAsState(
         targetValue = if (isActive) MaterialTheme.colorScheme.primary else Color.Transparent,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = tween(300),
         label = "borderColor"
     )
     
     Card(
         modifier = Modifier
             .width(160.dp)
-            .height(180.dp)
+            .height(140.dp)
             .scale(animatedScale)
             .clickable { onClick() }
             .then(
@@ -297,7 +285,7 @@ private fun BlockchainModuleCard(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isActive) 4.dp else 2.dp,
+            defaultElevation = 2.dp,
             pressedElevation = 8.dp
         )
     ) {
@@ -307,64 +295,29 @@ private fun BlockchainModuleCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // 상단: 아이콘과 활성화 상태
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            // 상단: 아이콘
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        module.primaryColor.copy(alpha = 0.1f)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                // 아이콘 박스
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            module.primaryColor.copy(alpha = if (isActive) 0.15f else 0.1f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // 동적 아이콘 로드 시도, 실패시 폴백 아이콘 사용
-                    if (module.iconBitmap != null) {
-                        Image(
-                            bitmap = module.iconBitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    } else if (module.fallbackIconRes != null) {
-                        Image(
-                            painter = painterResource(id = module.fallbackIconRes),
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-                
-                // 활성화 상태 표시
-                if (isActive) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = stringResource(R.string.main_blockchain_active),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
+                // 동적 아이콘 로드 시도, 실패시 폴백 아이콘 사용
+                if (module.iconBitmap != null) {
+                    Image(
+                        bitmap = module.iconBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
+                } else if (module.fallbackIconRes != null) {
+                    Image(
+                        painter = painterResource(id = module.fallbackIconRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
             
@@ -388,37 +341,7 @@ private fun BlockchainModuleCard(
                 }
             }
             
-            // 하단: 활성화 버튼
-            if (!isActive) {
-                Button(
-                    onClick = { 
-                        onActivate()
-                        // 클릭 이벤트가 카드로 전파되지 않도록 함
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(36.dp)
-                        .clickable(enabled = false) { }, // 클릭 이벤트 전파 방지
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp
-                    )
-                ) {
-                    Text(
-                        text = stringResource(R.string.main_blockchain_activate),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            } else {
-                // 활성화된 경우 빈 공간
-                Spacer(modifier = Modifier.height(36.dp))
-            }
+            // 활성화 버튼 제거
         }
     }
 }

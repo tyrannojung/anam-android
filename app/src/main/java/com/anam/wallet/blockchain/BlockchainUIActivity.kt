@@ -25,6 +25,7 @@ import com.anam.wallet.LocalNavController
 import com.anam.wallet.miniapp.MiniAppJavaScriptBridge
 import com.anam.wallet.miniapp.MiniAppLoader
 import com.anam.wallet.ui.theme.AnamwalletTheme
+import com.anam.wallet.blockchain.internal.IBlockchainManager
 
 /**
  * Activity for displaying blockchain UI in the blockchain process
@@ -36,7 +37,7 @@ class BlockchainUIActivity : ComponentActivity() {
         const val EXTRA_BLOCKCHAIN_ID = "blockchain_id"
     }
     
-    private var blockchainService: IBlockchainService? = null
+    private var blockchainManager: IBlockchainManager? = null
     private var serviceConnection: ServiceConnection? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,28 +65,32 @@ class BlockchainUIActivity : ComponentActivity() {
         val serviceIntent = Intent(this, BlockchainService::class.java)
         startService(serviceIntent)
         
-        // Bind to the service
+        // Bind to the service with Manager interface
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                // IBinder를 IBlockchainService 인터페이스로 변환
-                blockchainService = IBlockchainService.Stub.asInterface(service)
+                // IBinder를 IBlockchainManager 인터페이스로 변환
+                blockchainManager = IBlockchainManager.Stub.asInterface(service)
                 Log.d(TAG, "Connected to BlockchainService")
                 
                 // Switch to the requested blockchain
                 val blockchainId = intent.getStringExtra(EXTRA_BLOCKCHAIN_ID)
                 if (blockchainId != null) {
-                    blockchainService?.switchBlockchain(blockchainId)
+                    blockchainManager?.switchBlockchain(blockchainId)
+                    // MiniAppManager는 메인 프로세스에서 AIDL 리스너로 업데이트됨
                 }
             }
             
             override fun onServiceDisconnected(name: ComponentName?) {
-                blockchainService = null
+                blockchainManager = null
                 Log.d(TAG, "Disconnected from BlockchainService")
             }
         }
         
         serviceConnection = connection
-        bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
+        val bindIntent = Intent(this, BlockchainService::class.java).apply {
+            action = "com.anam.wallet.blockchain.MANAGER"
+        }
+        bindService(bindIntent, connection, Context.BIND_AUTO_CREATE)
     }
     
     override fun onDestroy() {
@@ -178,8 +183,8 @@ fun BlockchainWebView(
                     WebView.setWebContentsDebuggingEnabled(true)
                 }
                 
-                // 커스텀 스킴을 사용하도록 설정
-                webViewClient = com.anam.wallet.miniapp.CustomSchemeWebViewClient(
+                // WebViewAssetLoader를 사용하도록 설정
+                webViewClient = com.anam.wallet.miniapp.AssetLoaderWebViewClient(
                     appId = blockchainId,
                     basePath = basePath,
                     manifest = manifest,
@@ -199,9 +204,10 @@ fun BlockchainWebView(
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // Load the first page with custom scheme
+                // Load the first page with WebViewAssetLoader
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                val url = "anam://miniapp-$blockchainId/${firstPage}.html"
+                val baseUrl = com.anam.wallet.miniapp.AssetLoaderWebViewClient.getBaseUrlForApp(blockchainId)
+                val url = "$baseUrl${firstPage}.html"
                 
                 Log.d("BlockchainWebView", "Loading URL: $url")
                 loadUrl(url)

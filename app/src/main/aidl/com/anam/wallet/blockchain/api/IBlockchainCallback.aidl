@@ -1,5 +1,5 @@
 // IBlockchainCallback.aidl
-package com.anam.wallet.blockchain;
+package com.anam.wallet.blockchain.api;
 
 interface IBlockchainCallback {
     // Called when blockchain request succeeds

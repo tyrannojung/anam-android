@@ -24,7 +24,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.anam.wallet.miniapp.MiniAppJavaScriptBridge
 import com.anam.wallet.miniapp.MiniAppLoader
 import com.anam.wallet.miniapp.MiniAppManager
-import com.anam.wallet.miniapp.CustomSchemeWebViewClient
+import com.anam.wallet.miniapp.AssetLoaderWebViewClient
 import com.anam.wallet.model.miniapp.MiniAppManifest
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -207,7 +207,7 @@ fun MiniAppWebView(
                 
                 // 커스텀 스킴을 처리하는 WebViewClient 설정
                 // 이제 file:// 대신 anam:// 스킴을 사용합니다
-                webViewClient = CustomSchemeWebViewClient(
+                webViewClient = AssetLoaderWebViewClient(
                     appId = appId,        // 미니앱 ID (예: kr.go.government24)
                     basePath = basePath,  // 파일이 저장된 실제 경로
                     manifest = manifest,  // 페이지 화이트리스트 검증용
@@ -234,11 +234,11 @@ fun MiniAppWebView(
                 )
                 addJavascriptInterface(bridge, "anam")
                 
-                // 커스텀 스킴으로 첫 페이지 로드
-                // 기존: file:///data/data/.../files/miniapps/kr.go.government24/pages/index/index.html
-                // 변경: anam://miniapp-kr.go.government24/pages/index/index.html
+                // WebViewAssetLoader URL로 첫 페이지 로드
+                // 형식: https://kr.go.government24.miniapp.local/pages/index/index.html
                 val firstPage = manifest.pages.firstOrNull() ?: "pages/index/index"
-                val url = "anam://miniapp-$appId/${firstPage}.html"
+                val baseUrl = AssetLoaderWebViewClient.getBaseUrlForApp(appId)
+                val url = "$baseUrl${firstPage}.html"
                 
                 android.util.Log.d("MiniAppWebView", "Loading URL: $url")
                 android.util.Log.d("MiniAppWebView", "Base path: $basePath")

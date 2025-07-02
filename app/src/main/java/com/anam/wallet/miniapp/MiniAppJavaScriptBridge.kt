@@ -138,14 +138,15 @@ class MiniAppJavaScriptBridge(
     }
     
     /**
-     * 커스텀 스킴 URL 생성
+     * WebViewAssetLoader URL 생성
      */
     private fun buildUrl(pagePath: String, queryString: String): String {
-        val baseUrl = "anam://miniapp-${manifest.appId}/$pagePath.html"
+        val baseUrl = AssetLoaderWebViewClient.getBaseUrlForApp(manifest.appId)
+        val fullUrl = "$baseUrl$pagePath.html"
         return if (queryString.isNotEmpty()) {
-            "$baseUrl?$queryString"
+            "$fullUrl?$queryString"
         } else {
-            baseUrl
+            fullUrl
         }
     }
     
